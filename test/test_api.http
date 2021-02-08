@@ -1,0 +1,7 @@
+### Create a person instance
+GET http://localhost:8000
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/json
+
+###

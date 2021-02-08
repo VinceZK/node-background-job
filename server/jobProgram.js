@@ -143,13 +143,14 @@ export default class JobProgram {
    * Run the job program.
    * This method should be implemented with the main logic
    */
-  async run() {
+  async run(applicationLog) {
     console.log("start running...");
     return new Promise( (resolve, reject) => {
       setTimeout( () => {
         console.log(this.name, this.parameters);
         if (this.parameters.param1 === 'gogo2'){
           // throw new Error('error happened');
+          applicationLog.info('application log 1');
           reject(new Error('error happened'));
         } else {
           console.log('finished!');

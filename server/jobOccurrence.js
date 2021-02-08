@@ -1,12 +1,22 @@
 import {JobError} from './jobError.js';
 import JobProgram from "./jobProgram.js";
 import { v4 as uuid } from 'uuid';
-
-const OccurrenceStatusEnum = {"initial":0, "ready":1, "running":2, "finished":3, "failed":4, "cancel":5 };
-Object.freeze(OccurrenceStatusEnum);
+import Job from "./job.js";
+import {OccurrenceStatusEnum} from "./constants.js";
+import ApplicationLog from "./applicationLog.js";
 
 export default class JobOccurrence {
   static #occurrences = [];
+  static getOccurrences(filter) {
+    if (!filter) {
+      return this.#occurrences;
+    }
+    return this.#occurrences.filter( occurrence => {
+      return (!filter.uuid || filter.uuid === occurrence.uuid) &&
+        (!filter.jobName || filter.jobName === occurrence.jobName) &&
+        (!filter.status || filter.status === occurrence.status);
+    });
+  }
   static getLastReadyOccurrenceOfJob(jobName) {
     let lastReadyScheduledTime = 0;
     this.#occurrences.forEach( occurrence => {
@@ -16,52 +26,85 @@ export default class JobOccurrence {
         }
       }
     });
-    return this.#occurrences.find( occurrence => occurrence.job === jobName && occurrence.scheduledDateTime === lastReadyScheduledTime)
+    return this.#occurrences.find( occurrence =>
+      occurrence.job === jobName &&
+      occurrence.scheduledDateTime === lastReadyScheduledTime)
+  }
+  static assignSteps(source, target) {
+    source.forEach( step => target.push({...step}));
+  }
+  static assignStartCondition(source, target) {
+    target = { ...source };
+    if (source.mode === 2 && source.cronOption) { //recurrently
+      target.cronOption = { ...source.cronOption };
+    }
   }
 
-  constructor(jobDefinition, scheduledDateTime) {
+  /**
+   * Generate a job occurrence from a job definition and a scheduled date
+   * @param job: Job
+   * @param scheduledDateTime: Date()
+   */
+  constructor(job, scheduledDateTime) {
     this.uuid = uuid();
-    this.jobName = jobDefinition.name;
-    this.description = jobDefinition.description;
-    this.identity = jobDefinition.identity;
-    this.steps = jobDefinition.steps;
-    this.startCondition = jobDefinition.startCondition;
-    this.outputSettings = jobDefinition.outputSettings;
+    this.jobName = job.name;
+    this.description = { ...job.description };
+    this.identity = { ...job.identity };
+    this.steps = [];
+    JobOccurrence.assignSteps(job.steps, this.steps);
+    this.startCondition = {};
+    JobOccurrence.assignStartCondition(job.startCondition, this.startCondition);
+    this.outputSetting = { ...job.outputSetting };
     this.scheduledDateTime = scheduledDateTime;
-    const occurrenceEntry = {
-      uuid: this.uuid,
-      jobName: this.jobName,
-      status: OccurrenceStatusEnum.ready,
-      steps: this.steps,
-      scheduledDateTime: scheduledDateTime,
-      actualDateTime: 0,
-      finishedDateTime: 0,
-      output: '',
-      instance: this
-    };
-    JobOccurrence.#occurrences.push(occurrenceEntry);
+    this.#cacheJobOccurrence();
+    this.applicationLog = new ApplicationLog(this.uuid);
+    this.originalConsole = console;
     this.timerHandler = this.#setReady();
   }
 
-  getStatus() {
-    const occurrenceEntry = JobOccurrence.#occurrences.find( occurrence => occurrence.uuid = this.uuid );
-    return occurrenceEntry? occurrenceEntry.status : OccurrenceStatusEnum.initial;
+  /**
+   * Cache the job occurrence so that it can be traced and monitored.
+   * Once the job occurrence is finished, failed, or canceled, the instance should be recycled by GC.
+   * However, some key information should be still preserved in the cache.
+   * If a DB service is provided, the information in the cache is persisted.
+   */
+  #cacheJobOccurrence() {
+    this.entry = {
+      uuid: this.uuid,
+      jobName: this.jobName,
+      status: OccurrenceStatusEnum.initial,
+      steps: [],
+      startCondition: {},
+      scheduledDateTime: new Date(this.scheduledDateTime),
+      actualStartDateTime: 0,
+      endDateTime: 0,
+      applicationLog: [],
+      instance: this
+    };
+    JobOccurrence.assignSteps(this.steps, this.entry.steps);
+    JobOccurrence.assignStartCondition(this.startCondition, this.entry.startCondition);
+    JobOccurrence.#occurrences.push(this.entry);
   }
 
   #updateStatus(status) {
-    const occurrenceEntry = JobOccurrence.#occurrences.find( occurrence => occurrence.uuid = this.uuid );
-    if (!occurrenceEntry) {
-      throw new JobError('INITIAL_JOB_OCCURRENCE_STATUS');
-    }
-    if (status >= occurrenceEntry.status && occurrenceEntry.status < OccurrenceStatusEnum.finished) {
-      if (status === OccurrenceStatusEnum.cancel && occurrenceEntry.status !== OccurrenceStatusEnum.ready) {
+    if (status > this.entry.status && this.entry.status < OccurrenceStatusEnum.finished) {
+      if (status === OccurrenceStatusEnum.cancel && this.entry.status !== OccurrenceStatusEnum.ready) {
         // You can only cancel job occurrence with status 'Ready'
-        throw new JobError('INCORRECT_JOB_OCCURRENCE_STATUS_CHANGE', occurrenceEntry.status, status);
+        throw new JobError('INCORRECT_JOB_OCCURRENCE_STATUS_CHANGE', this.entry.status, status);
       } else {
-        occurrenceEntry.status = status;
+        this.entry.status = status;
       }
     } else {
-      throw new JobError('INCORRECT_JOB_OCCURRENCE_STATUS_CHANGE', occurrenceEntry.status, status);
+      throw new JobError('INCORRECT_JOB_OCCURRENCE_STATUS_CHANGE', this.entry.status, status);
+    }
+    if (status === OccurrenceStatusEnum.running) {
+      this.entry.actualStartDateTime = new Date();
+    }
+    if (status >= OccurrenceStatusEnum.finished) {
+      this.entry.endDateTime = new Date();
+      const job = Job.getJob(this.jobName).instance;
+      job.updateStatistics(status, this.scheduledDateTime);
+      this.entry.instance = null;
     }
   }
 
@@ -70,13 +113,18 @@ export default class JobOccurrence {
     let now = Date.now();
     let then = this.scheduledDateTime.getTime();
     return setTimeout(() => {
-      this.#runSteps().catch(e => {throw e});
+      this.#runSteps(this.applicationLog).catch(e => {
+        this.applicationLog.error(e.message);
+      });
     }, (then < now? 0 : then - now));
   }
 
-  async #runSteps() {
+  async #runSteps(applicationLog) {
     this.#updateStatus(OccurrenceStatusEnum.running);
-    for (const step of this.steps) {
+    if (this.outputSetting.console2ApplicationLog) {
+      this.#setConsole2ApplicationLog();
+    }
+    for (const step of this.entry.steps) {
       step.status = OccurrenceStatusEnum.running;
       const theClass = JobProgram.getJobProgramDefinition(step.program).class;
       if (!theClass) {
@@ -84,17 +132,31 @@ export default class JobOccurrence {
       }
       try {
         const jobProgramInstance = new theClass(step.program, step.parameters);
-        await jobProgramInstance.run();
+        step.output = await jobProgramInstance.run(applicationLog);
         step.status = OccurrenceStatusEnum.finished;
       } catch (e) {
         step.status = OccurrenceStatusEnum.failed;
         this.#updateStatus(OccurrenceStatusEnum.failed);
-        // console.log('Job Occurrence Status: ', this.getStatus());
-        // console.log(JobOccurrence.#occurrences[0].steps);
         throw e;
       }
     }
     this.#updateStatus(OccurrenceStatusEnum.finished);
+    if (this.outputSetting.console2ApplicationLog) {
+      this.#restoreConsoleFromApplicationLog();
+    }
+  }
+
+  #setConsole2ApplicationLog() {
+    if (console.constructor.name !== 'ApplicationLog') {
+      console = this.applicationLog;
+    }
+  }
+
+  #restoreConsoleFromApplicationLog() {
+    if (console.constructor.name === 'ApplicationLog' &&
+        console.uuid === this.uuid) {
+      console = this.originalConsole;
+    }
   }
 
   stop() {
@@ -102,7 +164,7 @@ export default class JobOccurrence {
   }
 
   cancel() {
-    this.#updateStatus(OccurrenceStatusEnum.cancel);
+    this.#updateStatus(OccurrenceStatusEnum.canceled);
     clearTimeout(this.timerHandler);
   }
 }

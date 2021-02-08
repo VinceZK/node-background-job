@@ -51,7 +51,7 @@ export const msgArray = [
 
 // Job errors:
   { msgCat: "job",
-    msgName: "GENERIC_ERRO",
+    msgName: "GENERIC_ERROR",
     msgText: {
       EN: {shortText: "%s", longText: "dummy"}
     }
@@ -77,7 +77,7 @@ export const msgArray = [
   { msgCat: "job",
     msgName: "TIMESPAN_IS_PAST",
     msgText: {
-      EN: {shortText: "Timespan is before", longText: "dummy"}
+      EN: {shortText: "Timespan is in past", longText: "dummy"}
     }
   },
   { msgCat: "job",
@@ -93,12 +93,6 @@ export const msgArray = [
     }
   },
   { msgCat: "job",
-    msgName: "INITIAL_JOB_OCCURRENCE_STATUS",
-    msgText: {
-      EN: {shortText: "Job occurrence status is initial", longText: "dummy"}
-    }
-  },
-  { msgCat: "job",
     msgName: "INCORRECT_JOB_OCCURRENCE_STATUS_CHANGE",
     msgText: {
       EN: {shortText: "Job occurrence status is not allowed for the change from %s to %s", longText: "dummy"}
@@ -110,4 +104,58 @@ export const msgArray = [
       EN: {shortText: "Job occurrence is not ready for run, the current status is %s", longText: "dummy"}
     }
   },
+  { msgCat: "job",
+    msgName: "MISSING_JOB_NAME",
+    msgText: {
+      EN: {shortText: "Job name is missing", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "MISSING_JOB_MODE",
+    msgText: {
+      EN: {shortText: "Job mode is missing", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "UNSUPPORTED_JOB_MODE",
+    msgText: {
+      EN: {shortText: "Unsupported job mode", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "MISSING_SPECIFIC_TIME",
+    msgText: {
+      EN: {shortText: "The specific time is missing", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "INVALID_DATE_STRING",
+    msgText: {
+      EN: {shortText: "The date string %s is invalid", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "MISSING_JOB_START_CONDITION",
+    msgText: {
+      EN: {shortText: "Missing job start condition", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "MISSING_JOB_PROGRAM",
+    msgText: {
+      EN: {shortText: "Job program is missing", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "INVALID_JOB_PROGRAM",
+    msgText: {
+      EN: {shortText: "Job program %s is invalid", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "OCCURRENCE_NOT_EXIST",
+    msgText: {
+      EN: {shortText: "Job occurrence doesn't exist", longText: "dummy"}
+    }
+  }
 ];

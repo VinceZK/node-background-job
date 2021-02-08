@@ -1,28 +1,30 @@
 import {JobError} from './jobError.js';
 import CronParser from 'cron-parser';
 import JobOccurrence from "./jobOccurrence.js";
-
-const StartConditionEnum = {"immediately":0, "specificTime":1, "recurrently":2, "onEvent":3 };
-Object.freeze(StartConditionEnum);
-const JobStatusEnum = {"initial":0, "scheduled":1, "completed":2, "canceled":3 };
-Object.freeze(JobStatusEnum);
+import JobProgram from "./jobProgram.js";
+import {JobStatusEnum, OccurrenceStatusEnum, StartConditionEnum} from "./constants.js";
 
 export default class Job {
   static #Jobs = [];
   static getJob(jobName) {
     return this.#Jobs.find(job => job.name === jobName);
   }
-  static getJobs() {
-    return this.#Jobs;
+  static getJobs(filter) {
+    if (!filter) {
+      return this.#Jobs;
+    }
+    return this.#Jobs.filter( job => {
+      return (!filter.name || filter.name === job.name) &&
+        (!filter.status || filter.status === job.status) &&
+        (!filter.mode || filter.mode === job.startCondition.mode) &&
+        (!filter.program || job.steps.findIndex( step => step.program === filter.program));
+    });
   }
-  // static convertDateToCronString(date) {
-  //   return `${date.getSeconds()} ${date.getMinutes()} ${date.getHours()} ${date.getDay()} ${date.getMonth()} ? ${date.getFullYear()}`;
-  // }
   static checkStartEndTime(start, end, now) {
-    if (start < end) {
+    if (start && end && start >= end) {
       throw new JobError('END_DATE_BEFORE_CURRENT_DATE');
     }
-    if (end < now) {
+    if (end && end < now) {
       throw new JobError('TIMESPAN_IS_PAST')
     }
   }
@@ -43,39 +45,69 @@ export default class Job {
    *     cronOption: {currentDate: '', endDate: '', tz: ''},
    *     onEvent: {eventEmitter: object, event: 'eventName' }
    *   },
-   *   output: {}
+   *   outputSetting: {
+   *     console2ApplicationLog: true,
+   *   }
    * }
    * @param jobDefinition
    */
   constructor(jobDefinition) {
-    let job = Job.getJob(jobDefinition.name);
-    if (job) {
-      throw new JobError('JOB_NAME_DUPLICATE', jobDefinition.name);
-    }
-    this.name = jobDefinition.name;
-    this.description = jobDefinition.description;
+    this.#checkJobName(jobDefinition.name);
+    this.#checkDescription(jobDefinition.description);
     this.identity = jobDefinition.identity;
-    this.steps = jobDefinition.steps;
-    this.startCondition = jobDefinition.startCondition;
+    this.#parseSteps(jobDefinition.steps);
+    this.#parseStartCondition(jobDefinition.startCondition);
     this.outputSetting = jobDefinition.outputSetting;
-    this.#parseStartCondition();
-    const jobEntry = {
-      name: this.name,
-      status: JobStatusEnum.initial,
-      startDateTime: this.startDateTime,
-      endDateTime: this.endDateTime,
-      finishedOccurrences: 0,
-      failedOccurrences: 0,
-      instance: this
-    };
-    Job.#Jobs.push(jobEntry);
+    this.#cacheJob();
   }
 
+  #checkJobName(jobName) {
+    if(!jobName) {
+      throw new JobError('MISSING_JOB_NAME');
+    }
+    if (Job.getJob(jobName)) {
+      throw new JobError('JOB_NAME_DUPLICATE', jobName);
+    }
+    this.name = jobName;
+  }
+  #checkDescription(description) {
+    if (description) {
+      if (typeof description === 'string') {
+        this.description = { default: description };
+      }
+    }
+  }
   /**
-   * parse the start condition to cron-style
+   * Parse the steps
+   * @param steps:
+   * program: 'jobProgram1', parameters: {}}
+   * of
+   * [
+   *   {program: 'jobProgram1', parameters: {}},
+   *   {program: 'jobProgram2', parameters: {}}
+   * ],
+   */
+  #parseSteps(steps) {
+    this.steps = steps;
+    if (!Array.isArray(steps)) {
+      this.steps = [];
+      this.steps.push(steps);
+    }
+    this.steps.forEach( step => {
+      if (!step.program) {
+        throw new JobError('MISSING_JOB_PROGRAM');
+      }
+      if (!JobProgram.getJobProgramDefinition(step.program)) {
+        throw new JobError('INVALID_JOB_PROGRAM', step.program);
+      }
+      //TODO: Parse parameter
+    })
+  }
+  /**
+   * Parse the start condition
    * @type: startCondition: {
    *   mode: StartConditionEnum.Immediately || Specific-time || Recurrently || On-event,
-   *   specificTime: Date(),
+   *   specificTime: Date().toString(),
    *   cronString: '<cron-style string>',
    *   cronOption: {currentDate: '', endDate: '', tz: 'UTC+8'},
    *   onEvent: {eventEmitter: object, event: 'eventName' }
@@ -91,52 +123,94 @@ export default class Job {
    * │    └─────────────────────────  minute (0 - 59)
    * └──────────────────────────────  second (0 - 59, optional)
   */
-  #parseStartCondition() {
+  #parseStartCondition(startCondition) {
+    if(!startCondition) {
+      throw new JobError('MISSING_JOB_START_CONDITION');
+    }
+    this.startCondition = startCondition;
+    if (this.startCondition.mode === null ||
+        this.startCondition.mode === undefined) {
+      throw new JobError('MISSING_JOB_MODE');
+    }
     let now = new Date();
     switch (this.startCondition.mode) {
       case StartConditionEnum.immediately:
         this.startDateTime = now;
-        //this.startCondition.cronString = Job.convertDateToCronString(now);
+        this.endDateTime = now;
         break;
       case StartConditionEnum.specificTime:
-        this.startDateTime = now;
-        this.endDateTime = new Date(this.startCondition.specificTime);
-        if (this.endDateTime < now) {
+        if (!this.startCondition.specificTime) {
+          throw new JobError('MISSING_SPECIFIC_TIME');
+        }
+        this.startDateTime = new Date(this.startCondition.specificTime);
+        if (isNaN(this.startDateTime)) {
+          throw new JobError('INVALID_DATE_STRING', this.startCondition.specificTime);
+        }
+        if (this.startDateTime < now) {
           throw new JobError('SCHEDULED_DATE_PAST');
         }
-        //this.startCondition.cronString = Job.convertDateToCronString(this.endDateTime);
+        this.endDateTime = this.startDateTime;
         break;
       case StartConditionEnum.recurrently:
-        let currentDate = new Date(this.startCondition.cronOption.currentDate);
-        let endDate = new Date(this.startCondition.cronOption.endDate);
+        let currentDate = null;
+        let endDate = null;
+        if (this.startCondition.cronOption && this.startCondition.cronOption.currentDate) {
+          currentDate = new Date(this.startCondition.cronOption.currentDate);
+          if (isNaN(currentDate)) {
+            throw new JobError('INVALID_DATE_STRING', this.startCondition.cronOption.currentDate);
+          }
+        }
+        if (this.startCondition.cronOption && this.startCondition.cronOption.endDate) {
+          endDate = new Date(this.startCondition.cronOption.endDate);
+          if (isNaN(endDate)) {
+            throw new JobError('INVALID_DATE_STRING', this.startCondition.cronOption.endDate);
+          }
+        }
         Job.checkStartEndTime(currentDate, endDate, now);
-        this.startDateTime = currentDate;
+        this.startDateTime = (!currentDate || currentDate < now)? now: currentDate;
         this.endDateTime = endDate;
         break;
       case StartConditionEnum.onEvent:
         break;
       default:
-      // Do nothing
+        throw new JobError('UNSUPPORTED_JOB_MODE');
     }
+  }
+  /**
+   * Cache the job so that it can be traced and monitored.
+   * Once the job is finished or canceled, the instance should be recycled by GC.
+   * However, some key information should be still preserved in the cache.
+   * If a DB service is provided, the information in the cache is persisted.
+   */
+  #cacheJob() {
+    this.entry = {
+      name: this.name,
+      status: JobStatusEnum.initial,
+      identity: { ...this.identity },
+      steps: [],
+      startCondition: {},
+      outputSetting: { ...this.outputSetting },
+      finishedOccurrences: 0,
+      failedOccurrences: 0,
+      canceledOccurrences: 0,
+      instance: this
+    };
+    JobOccurrence.assignSteps(this.steps, this.entry.steps);
+    JobOccurrence.assignStartCondition(this.startCondition, this.entry.startCondition);
+    Job.#Jobs.push(this.entry);
   }
 
   scheduleOccurrences(startDateTime, endDateTime) {
-    this.setStatus(JobStatusEnum.scheduled);
-    const jobDefinition = {
-      name: this.name,
-      description: this.description,
-      identity: this.identity,
-      steps: this.steps,
-      startCondition: this.startCondition,
-      outputSetting: this.outputSetting
-    };
+    this.#setStatus(JobStatusEnum.scheduled);
     switch (this.startCondition.mode) {
       case StartConditionEnum.immediately:
+        new JobOccurrence(this, this.startDateTime);
+        break;
       case StartConditionEnum.specificTime:
-        new JobOccurrence(jobDefinition, this.startDateTime);
+        this.#scheduleSpecificTime(endDateTime);
         break;
       case StartConditionEnum.recurrently:
-        this.#scheduleRecurrently(startDateTime, endDateTime, jobDefinition);
+        this.#scheduleRecurrently(startDateTime, endDateTime);
         break;
       case StartConditionEnum.onEvent:
         break;
@@ -145,44 +219,88 @@ export default class Job {
     }
   }
 
-  setStatus(status) {
-    const currentJobEntry = Job.getJob(this.name);
-    if (status >= currentJobEntry.status && currentJobEntry.status < JobStatusEnum.completed) {
-      currentJobEntry.status = status;
-    } else {
-      throw new JobError('INCORRECT_JOB_STATUS_CHANGE', currentJobEntry.status, status);
+  updateStatistics(occurrenceStatus, scheduledDateTime) {
+    switch (occurrenceStatus) {
+      case OccurrenceStatusEnum.finished:
+        this.entry.finishedOccurrences++;
+        break;
+      case OccurrenceStatusEnum.failed:
+        this.entry.failedOccurrences++;
+        break;
+      case OccurrenceStatusEnum.canceled:
+        this.entry.canceledOccurrences++;
+        break;
+      default:
+      // Do nothing
+    }
+    if (!this.hasNextOccurrence(scheduledDateTime)) {
+      this.#setStatus(JobStatusEnum.completed);
+      this.entry.instance = null;
+    }
+  }
+
+  hasNextOccurrence(scheduledDateTime) {
+    switch (this.startCondition.mode) {
+      case StartConditionEnum.immediately:
+      case StartConditionEnum.specificTime:
+        return scheduledDateTime < this.startDateTime;
+      case StartConditionEnum.recurrently:
+        const cronOption = { ...this.startCondition.cronOption };
+        cronOption.currentDate = scheduledDateTime;
+        let interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);
+        return interval.hasNext();
+      case StartConditionEnum.onEvent:
+      default:
+        return true;
     }
   }
 
   cancel() {
-
+    const occurrences = JobOccurrence.getOccurrences({jobName: this.name, status: OccurrenceStatusEnum.ready});
+    occurrences.forEach( occurrence => occurrence.instance.cancel());
+    this.#setStatus(JobStatusEnum.canceled);
+    this.entry.instance = null;
   }
 
-  #scheduleRecurrently(startDateTime, endDateTime, jobDefinition) {
-    let start = startDateTime? startDateTime : this.startDateTime;
-    let end = endDateTime? endDateTime : this.endDateTime;
-    Job.checkStartEndTime(start, end, Date.now());
-    if (start < this.startDateTime) {
-      start = this.startDateTime;
+  #setStatus(status) {
+    if (status >= this.entry.status && this.entry.status < JobStatusEnum.completed) {
+      this.entry.status = status;
+    } else {
+      throw new JobError('INCORRECT_JOB_STATUS_CHANGE', this.entry.status, status);
     }
-    if (end > this.endDateTime) {
-      end = this.endDateTime;
+  }
+
+  /**
+   * Given the timespan from now to endDateTime,
+   * check if the specific job start time is before the endDateTime
+   * @param endDateTime
+   */
+  #scheduleSpecificTime(endDateTime) {
+    if (endDateTime < this.startDateTime) {
+      return;
     }
-    const maxTimeout = 2147483; // setTimeout has the max waiting time of 2147483647ms, about 2147483s
-    if (end - start > maxTimeout) {
-      end = end.setSeconds(start.getSeconds() + maxTimeout);
+    // startDateTime should be no later than now for 2147483 seconds.
+    // Because the function setTimeout(maxTimeout) has the max waiting time of 2147483647ms, about 2147483s
+    if (this.startDateTime.getTime() - Date.now() <= 2147483000) {
+      new JobOccurrence(this, this.startDateTime);
     }
-    let cronOption = { ...this.startCondition.cronOption };
-    cronOption.currentDate = start;
-    cronOption.endDate = end;
+  }
+  /**
+   * Schedule occurrences from a recurrence job within a given timespan.
+   * @param startDateTime
+   * @param endDateTime
+   */
+  #scheduleRecurrently(startDateTime, endDateTime) {
+    const cronOption = this.evaluateStartEndTime(startDateTime, endDateTime);
     try {
       let interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);
       while (true) {
         try {
           let occurrenceTime = interval.next();
           let lastReadyOccurrence = JobOccurrence.getLastReadyOccurrenceOfJob(this.name);
-          if (occurrenceTime > lastReadyOccurrence.scheduledDateTime) {
-            new JobOccurrence(jobDefinition, start);
+          let lastReadyOccurrenceTime = lastReadyOccurrence? lastReadyOccurrence.scheduledDateTime : cronOption.currentDate;
+          if (occurrenceTime.getTime() > lastReadyOccurrenceTime.getTime()) {
+            new JobOccurrence(this, occurrenceTime);
           }
         } catch (e) {
           break;
@@ -191,6 +309,42 @@ export default class Job {
     } catch (err) {
       throw new JobError('GENERIC_ERROR', err);
     }
+  }
+
+  /**
+   * The occurrence timespan from startDateTime to endDateTime should be validated
+   * and converted to cronOption. 2 hard conditions must be met:
+   * 1. The occurrence timespan should be within the timespan of Job [currentDate, endDate];
+   * 2. The endDateTime should be no larger than 2147483 seconds from Date.now().
+   * @param startDateTime
+   * @param endDateTime
+   */
+  evaluateStartEndTime(startDateTime, endDateTime) {
+    // startDateTime and endDateTime can be null, which means no start and no end.
+    let start = startDateTime? startDateTime : this.startDateTime;
+    let end = endDateTime? endDateTime : this.endDateTime;
+    let now = new Date();
+    Job.checkStartEndTime(start, end, now);
+    if (start < this.startDateTime) {
+      start = this.startDateTime;
+    }
+    if (end > this.endDateTime) {
+      end = this.endDateTime;
+    }
+    // endDateTime should be no later than now for 2147483 seconds.
+    // Because the function setTimeout(maxTimeout) has the max waiting time of 2147483647ms, about 2147483s
+    const maxTimeout = 2147483;
+    if (!end) { // endless
+      end = new Date();
+      end.setSeconds(now.getSeconds() + maxTimeout);
+    } else if (end.getTime() - now.getTime() > maxTimeout * 1000) {
+      end.setSeconds(now.getSeconds() + maxTimeout);
+    }
+    // Reassign the currentDate and endDate for the scheduling.
+    let cronOption = { ...this.startCondition.cronOption };
+    cronOption.currentDate = start;
+    cronOption.endDate = end;
+    return cronOption;
   }
 
 }
