@@ -17,26 +17,25 @@ export default class JobOccurrence {
         (!filter.status || filter.status === occurrence.status);
     });
   }
-  static getLastReadyOccurrenceOfJob(jobName) {
-    let lastReadyScheduledTime = 0;
+  static getLastScheduledOccurrence(jobName) {
+    let lastScheduledTime = 0;
     this.#occurrences.forEach( occurrence => {
       if (occurrence.jobName === jobName) {
-        if(occurrence.scheduledDateTime > lastReadyScheduledTime) {
-          lastReadyScheduledTime = occurrence.scheduledDateTime;
+        if(occurrence.scheduledDateTime > lastScheduledTime) {
+          lastScheduledTime = occurrence.scheduledDateTime;
         }
       }
     });
     return this.#occurrences.find( occurrence =>
-      occurrence.job === jobName &&
-      occurrence.scheduledDateTime === lastReadyScheduledTime)
+      occurrence.jobName === jobName &&
+      occurrence.scheduledDateTime === lastScheduledTime)
   }
   static assignSteps(source, target) {
     source.forEach( step => target.push({...step}));
   }
   static assignStartCondition(source, target) {
-    target = { ...source };
-    if (source.mode === 2 && source.cronOption) { //recurrently
-      target.cronOption = { ...source.cronOption };
+    for (const [key, value] of Object.entries(source)) {
+      target[key] = typeof value === 'object'? JSON.parse(JSON.stringify(value)) : value;
     }
   }
 

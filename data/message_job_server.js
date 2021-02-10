@@ -25,6 +25,12 @@ export const msgArray = [
     }
   },
   { msgCat: "jobProgram",
+    msgName: "INVALID_JOB_PROGRAM_CLASS",
+    msgText: {
+      EN: {shortText: "Job program class %s is invalid", longText: "dummy"}
+    }
+  },
+  { msgCat: "jobProgram",
     msgName: "MISSING_GROUP_ASSIGNMENT",
     msgText: {
       EN: {shortText: "Parameter '%s' has not a group assigned", longText: "dummy"}
@@ -46,6 +52,18 @@ export const msgArray = [
     msgName: "POSITION_IS_NOT_NUMBER",
     msgText: {
       EN: {shortText: "Position of %s is not numeric", longText: "dummy"}
+    }
+  },
+  { msgCat: "jobProgram",
+    msgName: "INVALID_PARAMETER",
+    msgText: {
+      EN: {shortText: "Parameter %s is invalid", longText: "dummy"}
+    }
+  },
+  { msgCat: "jobProgram",
+    msgName: "MANDATORY_PARAMETER_VALUE_MISSING",
+    msgText: {
+      EN: {shortText: "Mandatory parameter %s has no value assigned", longText: "dummy"}
     }
   },
 
@@ -156,6 +174,18 @@ export const msgArray = [
     msgName: "OCCURRENCE_NOT_EXIST",
     msgText: {
       EN: {shortText: "Job occurrence doesn't exist", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "MAX_TIMEOUT",
+    msgText: {
+      EN: {shortText: "You cannot schedule at %n hours later", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "HOURS_IS_NOT_A_NUMBER",
+    msgText: {
+      EN: {shortText: "Hours given %s is not a number", longText: "dummy"}
     }
   }
 ];

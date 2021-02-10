@@ -1,12 +1,59 @@
 "use strict";
-// const job = schedule.scheduleJob('42 * * * * *', function(date){
-//   console.log('The answer to life, the universe, and everything!', date);
-// });
+import express from 'express';
+import cors from 'cors';
+import compression from 'compression';
+import {router} from "./server/routes.js";
+import TestJobProgram from "./server/jobPrograms/testJobProgram.js";
+import Job from "./server/job.js";
 
+const app = express();
 
-import cluster from 'cluster';
-import http from 'http';
-import os from 'os';
+app.use(cors());
+app.use(express.json());
+app.use(compression());
+
+app.use('/', router);
+
+new Job(  {
+  name: 'testImmediateJob',
+  description: 'immediate job',
+  steps: [
+    {program: 'testJobProgram', parameters: {param1: 'value1'}}
+  ],
+  startCondition: { mode: 0 }
+});
+let now = new Date();
+let specificTime = new Date();
+specificTime.setSeconds(now.getSeconds() + 2);
+new Job(  {
+  name: 'testSpecTimeJob',
+  description: 'specific time job',
+  steps: [
+    {program: 'testJobProgram', parameters: {param1: 'value2'}}
+  ],
+  startCondition: { mode: 1, specificTime:  specificTime.toString() }
+});
+let end = new Date();
+end.setSeconds(now.getSeconds() + 8);
+new Job(  {
+  name: 'testRecursiveJob',
+  description: 'specific time job',
+  steps: [
+    {program: 'testJobProgram', parameters: {param1: 'value2'}}
+  ],
+  startCondition: {
+    mode: 2,
+    cronString: '*/2 * * * * *',
+    cronOption: {}
+  }
+});
+
+process.on('SIGINT',function(){
+  console.log("Closing.....");
+  process.exit()
+});
+
+app.listen(8000, () => console.log('Example app listening on port 8000!'));
 
 // if (cluster.isMaster) {
 //   console.log(`Master ${process.pid} is running`);
@@ -43,7 +90,6 @@ import os from 'os';
 //   });
 //
 // } else {
-//
 //   // Worker processes have a http server.
 //   http.Server((req, res) => {
 //     res.writeHead(200);

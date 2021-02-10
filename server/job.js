@@ -15,7 +15,9 @@ export default class Job {
     }
     return this.#Jobs.filter( job => {
       return (!filter.name || filter.name === job.name) &&
+        (!filter.name_includes || job.name.includes(filter.name_includes)) &&
         (!filter.status || filter.status === job.status) &&
+        (!filter.status_LE || filter.status <= job.status) &&
         (!filter.mode || filter.mode === job.startCondition.mode) &&
         (!filter.program || job.steps.findIndex( step => step.program === filter.program));
     });
@@ -100,7 +102,9 @@ export default class Job {
       if (!JobProgram.getJobProgramDefinition(step.program)) {
         throw new JobError('INVALID_JOB_PROGRAM', step.program);
       }
-      //TODO: Parse parameter
+      if (step.parameters) {
+        JobProgram.checkParameters(step.program, step.parameters);
+      }
     })
   }
   /**
@@ -210,7 +214,7 @@ export default class Job {
         this.#scheduleSpecificTime(endDateTime);
         break;
       case StartConditionEnum.recurrently:
-        this.#scheduleRecurrently(startDateTime, endDateTime);
+        this.#scheduleRecurrently(endDateTime);
         break;
       case StartConditionEnum.onEvent:
         break;
@@ -271,7 +275,7 @@ export default class Job {
   }
 
   /**
-   * Given the timespan from now to endDateTime,
+   * Given the timespan from now to the endDateTime,
    * check if the specific job start time is before the endDateTime
    * @param endDateTime
    */
@@ -286,20 +290,22 @@ export default class Job {
     }
   }
   /**
-   * Schedule occurrences from a recurrence job within a given timespan.
-   * @param startDateTime
+   * Schedule occurrences from a recurrence job with a given endDateTime.
+   * It always starts from the last scheduled occurrence.
+   * If there is no existing occurrence, then starts from the job startDateTime.
    * @param endDateTime
    */
-  #scheduleRecurrently(startDateTime, endDateTime) {
-    const cronOption = this.evaluateStartEndTime(startDateTime, endDateTime);
+  #scheduleRecurrently(endDateTime) {
+    const cronOption = this.generateCronOption(endDateTime);
+    let now = new Date();
     try {
       let interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);
       while (true) {
         try {
           let occurrenceTime = interval.next();
-          let lastReadyOccurrence = JobOccurrence.getLastReadyOccurrenceOfJob(this.name);
-          let lastReadyOccurrenceTime = lastReadyOccurrence? lastReadyOccurrence.scheduledDateTime : cronOption.currentDate;
-          if (occurrenceTime.getTime() > lastReadyOccurrenceTime.getTime()) {
+          if ( occurrenceTime.getTime() >= now.getTime()) {
+            // Start date could be in the past and the occurrences in the past are either canceled, or not run.
+            // Thus these occurrences should be skipped.
             new JobOccurrence(this, occurrenceTime);
           }
         } catch (e) {
@@ -312,23 +318,24 @@ export default class Job {
   }
 
   /**
-   * The occurrence timespan from startDateTime to endDateTime should be validated
-   * and converted to cronOption. 2 hard conditions must be met:
-   * 1. The occurrence timespan should be within the timespan of Job [currentDate, endDate];
-   * 2. The endDateTime should be no larger than 2147483 seconds from Date.now().
-   * @param startDateTime
+   * Generate the occurrence timespan and converted to cronOption.
+   * 2 conditions must be met:
+   * 1. The startDateTime should be the last scheduled datetime. If not, then the job start datetime.
+   * 2. The endDateTime should be no larger than 2147483 seconds from the current(Date.now).
    * @param endDateTime
    */
-  evaluateStartEndTime(startDateTime, endDateTime) {
-    // startDateTime and endDateTime can be null, which means no start and no end.
-    let start = startDateTime? startDateTime : this.startDateTime;
-    let end = endDateTime? endDateTime : this.endDateTime;
+  generateCronOption(endDateTime) {
+    // The start time should always be job's startDateTime
+    let start = this.startDateTime;
     let now = new Date();
-    Job.checkStartEndTime(start, end, now);
-    if (start < this.startDateTime) {
-      start = this.startDateTime;
-    }
-    if (end > this.endDateTime) {
+    // if there is already occurrence scheduled, then starts from the last scheduled occurrence.
+    // Even the last occurrence is canceled, we won't re-schedule it.
+    // Only to find the next occurrence of the last scheduled one.
+    let lastScheduledOccurrence = JobOccurrence.getLastScheduledOccurrence(this.name);
+    if (lastScheduledOccurrence) { start = lastScheduledOccurrence.scheduledDateTime; }
+
+    let end = endDateTime? endDateTime : this.endDateTime;
+    if (this.endDateTime && end > this.endDateTime) {
       end = this.endDateTime;
     }
     // endDateTime should be no later than now for 2147483 seconds.
@@ -338,8 +345,12 @@ export default class Job {
       end = new Date();
       end.setSeconds(now.getSeconds() + maxTimeout);
     } else if (end.getTime() - now.getTime() > maxTimeout * 1000) {
+      end = new Date();
       end.setSeconds(now.getSeconds() + maxTimeout);
     }
+
+    Job.checkStartEndTime(start, end, now);
+
     // Reassign the currentDate and endDate for the scheduling.
     let cronOption = { ...this.startCondition.cronOption };
     cronOption.currentDate = start;

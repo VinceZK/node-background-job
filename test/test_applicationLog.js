@@ -5,9 +5,17 @@ import ApplicationLog from "../server/applicationLog.js";
 
 describe('Application log class tests',  () => {
   before('Register a test job program and a test job',  () => {
-    JobProgram.registerJobProgram('JobProgram', {className: 'JobProgram'});
+    JobProgram.registerJobProgram(
+      'JobProgram',
+      {
+        className: 'JobProgram',
+        parameterGroups: {
+          GROUP1: { position: 1, text: { default: 'text of group'} }},
+        parameterDefinitions: {
+          param1: { position: 1, text: {default: 'Label1'}, group: 'GROUP1'} }
+      });
     let specificTime = new Date();
-    specificTime.setDate(specificTime.getDate() + 10);
+    specificTime.setSeconds(specificTime.getSeconds() + 1);
     const job = new Job(  {
       name: 'applicationLog',
       description: 'job description',

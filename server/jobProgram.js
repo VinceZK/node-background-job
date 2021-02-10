@@ -6,8 +6,20 @@ export default class JobProgram {
   /**
    * Register a job program.
    * @param name: Name of a job program. It should be a unique string
-   * @param definition: Definition of a job program, which includes the underlying javascript class which extends the
-   * super class JobProgram, the description of the job program(multi-language), and the parameters.
+   * @param definition: Definition of a job program in JSON.
+   * {
+   *   className: '<javascript class which extends JobProgram>',
+   *   class: <The Class of the job program>
+   *   description: 'description of the job program',
+   *   parameterGroups: {
+   *     GROUP1: {position: 1, text: {default: 'text of group1'}},
+   *     GROUP2: {position: 2, text: {default: 'text of group2'}}
+   *   },
+   *   parameterDefinitions: {
+   *     PARAM1: {position: 1, text: {default: 'Label1'}, group: 'GROUP1', dataElement: 'FIELD1'},
+   *     PARAM2: {position: 2, text: {default: 'Label2'}, group: 'GROUP2', dataElement: 'FIELD2'}
+   *   }
+   * }
    */
   static registerJobProgram(name, definition) {
     if (!name) {
@@ -26,7 +38,17 @@ export default class JobProgram {
     if (!programDefinition.className) {
       throw new JobProgramError('MISSING_JOB_CLASS_NAME');
     }
-    programDefinition.class = this;
+
+    /**
+     * Pass the class definition of the job program.
+     */
+    if (!programDefinition.class) {
+      programDefinition.class = this;
+    } else {
+      if (!this.#isJobProgramClass(programDefinition.class)) {
+        throw new JobProgramError('INVALID_JOB_PROGRAM_CLASS', programDefinition.className);
+      }
+    }
     /**
      * jobDescription has the following generic type for multi-languages.
      * generic text @type
@@ -36,9 +58,9 @@ export default class JobProgram {
      *   'ZH': '中文文本'
      * }
      */
-    if (programDefinition.jobDescription) {
-      if (typeof programDefinition.jobDescription === 'string') {
-        programDefinition.jobDescription = {default: programDefinition.jobDescription};
+    if (programDefinition.description) {
+      if (typeof programDefinition.description === 'string') {
+        programDefinition.description = {default: programDefinition.description};
       }
     }
     /**
@@ -103,6 +125,22 @@ export default class JobProgram {
     }
   }
 
+  static #isJobProgramClass(targetClass) {
+    let baseClass = targetClass;
+    if(baseClass instanceof Function) {
+      while (baseClass){
+        const newBaseClass = Object.getPrototypeOf(baseClass);
+        if(newBaseClass && newBaseClass !== Object && newBaseClass.name){
+          baseClass = newBaseClass;
+        }else{
+          break;
+        }
+      }
+      return baseClass.name === 'JobProgram';
+    } else {
+      return false;
+    }
+  }
   /**
    * Get a job program definition.
    * @param name
@@ -112,36 +150,61 @@ export default class JobProgram {
   }
 
   /**
-   * Get job programs in the system.
+   * Get the job programs which contains the <name>.
+   * @param nameFilter: string
+   * @returns {{}}
    */
-  static getJobPrograms() {
-    return this.#jobPrograms;
-  }
-
-  constructor(name, parameters) {
-    this.name = name;
-    this.setParameters(parameters);
-  }
-
-  /**
-   * Set the parameters for the job program
-   * @param parameters
-   */
-  setParameters(parameters) {
-    this.parameters = parameters;
+  static getJobPrograms(nameFilter) {
+    const jobPrograms = [];
+    for (const [key, value] of Object.entries(this.#jobPrograms )) {
+      if (!nameFilter || key.includes(nameFilter)) {
+        jobPrograms.push({
+          name: key,
+          description: value.description
+        });
+      }
+    }
+    return jobPrograms;
   }
 
   /**
    * Check the job parameters
    * Validate the parameters provided by the invoker
    */
-  check() {
-
+  static checkParameters(name, parameters) {
+    const jobDefinition = JobProgram.getJobProgramDefinition(name);
+    if (!jobDefinition) {
+      throw new JobProgramError('MISSING_JOB_PROGRAM_NAME')
+    }
+    for (const [key, value] of Object.entries(parameters)) {
+      let paramDefinition = jobDefinition.parameterDefinitions[key];
+      if (!paramDefinition) {
+        throw new JobProgramError('INVALID_PARAMETER', key);
+      }
+      if (paramDefinition.mandatory && !value) {
+        throw new JobProgramError('MANDATORY_PARAMETER_VALUE_MISSING', key);
+      }
+    }
   }
 
   /**
-   * Run the job program.
-   * This method should be implemented with the main logic
+   * @param name: name of the job program,
+   * @param parameters:
+   * {
+   *   PARAM1: any,
+   *   PARAM2: any
+   * }
+   */
+  constructor(name, parameters) {
+    this.name = name;
+    this.parameters = parameters;
+  }
+
+  /**
+   * Run the main logic of the job program.
+   * This method should be re-implemented with your main logic.
+   * @param applicationLog: ApplicationLog
+   * @returns {Promise<unknown>}
    */
   async run(applicationLog) {
     console.log("start running...");
@@ -149,7 +212,6 @@ export default class JobProgram {
       setTimeout( () => {
         console.log(this.name, this.parameters);
         if (this.parameters.param1 === 'gogo2'){
-          // throw new Error('error happened');
           applicationLog.info('application log 1');
           reject(new Error('error happened'));
         } else {

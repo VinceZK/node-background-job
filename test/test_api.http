@@ -1,5 +1,55 @@
-### Create a person instance
-GET http://localhost:8000
+### Get job programs
+GET http://localhost:8000/api/jobPrograms?filter=test
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/json
+
+### Get job program definition
+GET http://localhost:8000/api/jobPrograms/testJobProgram
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/json
+
+### Get job with a filter
+GET http://localhost:8000/api/jobs?filter={ "name_includes": "SpecTime" }
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/json
+
+### Get job
+GET http://localhost:8000/api/jobs/testSpecTimeJob
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/json
+
+### Create a job
+POST http://localhost:8000/api/jobs
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/json
+
+{
+  "name": "testSpecTimeJob1",
+  "description": "specific time job",
+  "steps": [
+    { "program": "testJobProgram", "parameters": {"param1": "value2"}}
+  ],
+  "startCondition": { "mode": 1, "specificTime":  "2021/02/30 12:00:00" }
+}
+
+### Schedule a job
+POST http://localhost:8000/api/jobs/schedule
+Accept: */*
+Cache-Control: no-cache
+Content-Type: application/json
+
+[
+  "testSpecTimeJob",
+  "testSpecTimeJob1"
+]
+
+### Get job occurrences
+GET http://localhost:8000/api/jobs/testSpecTimeJob1/occurrences
 Accept: */*
 Cache-Control: no-cache
 Content-Type: application/json

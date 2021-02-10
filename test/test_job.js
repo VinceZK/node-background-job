@@ -3,9 +3,17 @@ import JobProgram from "../server/jobProgram.js";
 import JobOccurrence from "../server/jobOccurrence.js";
 import {JobStatusEnum, OccurrenceStatusEnum} from "../server/constants.js";
 
-describe.only('Job Class tests',  () => {
+describe('Job Class tests',  () => {
   before('Register a test job program and a test job',  () => {
-    JobProgram.registerJobProgram('JobProgram', {className: 'JobProgram'});
+    JobProgram.registerJobProgram(
+      'JobProgram',
+      {
+        className: 'JobProgram',
+        parameterGroups: {
+          GROUP1: { position: 1, text: { default: 'text of group'} }},
+        parameterDefinitions: {
+          param1: { position: 1, text: {default: 'Label1'}, group: 'GROUP1'} }
+      });
   });
 
   describe('Create a Job instance', () => {
@@ -230,7 +238,7 @@ describe.only('Job Class tests',  () => {
     });
   });
 
-  describe('Schedule immediately and specific time run', () => {
+  describe('Schedule immediately job run', () => {
     it('should run testJob immediately', async () => {
       try{
         let job = new Job(  {
@@ -308,14 +316,86 @@ describe.only('Job Class tests',  () => {
           jobEntry2.failedOccurrences.should.eql(0);
           jobEntry2.canceledOccurrences.should.eql(0);
           jobOccurrenceEntry1.applicationLog.length.should.eql(2);
-          jobOccurrenceEntry2.applicationLog.length.should.eql(6);
+          jobOccurrenceEntry2.applicationLog.length.should.within(6, 8);
           resolve(1);
         }, 1100);
       })
     });
   });
 
-  describe('schedule recurrent job run', () => {
+  describe('Schedule specific time job run', () => {
+    it('should not schedule the job as the start data is in future', () => {
+      let now = new Date();
+      let jobStart = new Date();
+      let occEnd = new Date();
+      jobStart.setSeconds(now.getSeconds() + 2);
+      occEnd.setSeconds(now.getSeconds() + 1);
+      try{
+        let job = new Job(  {
+          name: 'testSpecTimeJob',
+          description: 'job description',
+          steps: [
+            {program: 'JobProgram', parameters: {param1: 'gogo1'}},
+            {program: 'JobProgram', parameters: {param1: 'gogo2'}}
+          ],
+          startCondition: { mode: 1, specificTime: jobStart.toString()}
+        });
+        job.scheduleOccurrences(now, occEnd);
+      } catch (e) {
+        console.error(e.message);
+      }
+      return new Promise(resolve => {
+        setTimeout( () => {
+          const jobEntry = Job.getJobs({name: 'testSpecTimeJob'})[0];
+          const jobOccurrences = JobOccurrence.getOccurrences({jobName: 'testSpecTimeJob'});
+          jobEntry.status.should.eql(JobStatusEnum.scheduled);
+          jobEntry.finishedOccurrences.should.eql(0);
+          jobEntry.failedOccurrences.should.eql(0);
+          jobEntry.canceledOccurrences.should.eql(0);
+          jobEntry.instance.should.be.ok();
+          jobOccurrences.length.should.eql(0);
+          resolve(1);
+        }, 2100);
+      })
+    });
+    it('should schedule the job after 2 seconds', () => {
+      let now = new Date();
+      let occStart = new Date();
+      let occEnd = new Date();
+      occStart.setSeconds(now.getSeconds() - 2);
+      occEnd.setSeconds(now.getSeconds() + 2);
+      try{
+        const job  = Job.getJob('testSpecTimeJob').instance;
+        job.scheduleOccurrences(occStart, occEnd);
+      } catch (e) {
+        console.error(e.message);
+      }
+      return new Promise(resolve => {
+        setTimeout( () => {
+          const jobEntry = Job.getJobs({name: 'testSpecTimeJob'})[0];
+          const jobOccurrence = JobOccurrence.getOccurrences({jobName: 'testSpecTimeJob'})[0];
+          jobEntry.status.should.eql(JobStatusEnum.completed);
+          jobEntry.finishedOccurrences.should.eql(0);
+          jobEntry.failedOccurrences.should.eql(1);
+          jobEntry.canceledOccurrences.should.eql(0);
+          should(jobEntry.instance).not.be.ok();
+          jobOccurrence.status.should.eql(OccurrenceStatusEnum.failed);
+          jobOccurrence.applicationLog.should.containDeep([
+            { message: { msgShortText: 'application log 1', msgLongText: 'application log 1', msgType: 'I'}},
+            { message: { msgShortText: 'error happened', msgLongText: 'error happened', msgType: 'E'}}]);
+          (jobOccurrence.actualStartDateTime - now).should.within(0, 100);
+          (jobOccurrence.endDateTime - jobOccurrence.actualStartDateTime).should.within(1000, 1200);
+          should(jobOccurrence.instance).not.be.ok;
+          jobOccurrence.steps.should.containDeep([
+            { program: 'JobProgram', parameters: { param1: 'gogo1' }, status: 3, output: 'JobProgram'},
+            { program: 'JobProgram', parameters: { param1: 'gogo2' }, status: 4 }]);
+          resolve(1);
+        }, 2100);
+      })
+    });
+  });
+
+  describe('Schedule recurrent job run', () => {
     const jobDefinition = {
       name: 'testRecurrentJob',
       description: 'A recurrent job',
@@ -328,39 +408,22 @@ describe.only('Job Class tests',  () => {
         cronOption: {}
       }
     };
-    it('should fail in evaluating start end time: end is before start', () => {
+    it('should fail in evaluating start end time: end is in the past', () => {
       jobDefinition.name = 'testRecurrentJob1';
       const job = new Job(jobDefinition);
-      let start = new Date();
-      let end = new Date();
       let now = new Date();
-      start.setSeconds(now.getSeconds() + 1000);
-      end.setSeconds(now.getSeconds() + 500);
+      let end = new Date();
+      end.setSeconds(now.getSeconds() - 100);
       try {
-        job.evaluateStartEndTime(start, end);
+        job.generateCronOption(end);
         (0).should.equal(1);
       } catch (e) {
         e.message.msgName.should.eql('END_DATE_BEFORE_CURRENT_DATE');
       }
     });
-    it('should fail in evaluating start end time: end is before now', () => {
-      jobDefinition.name = 'testRecurrentJob1';
-      const job = Job.getJob('testRecurrentJob1').instance;
-      let now = new Date();
-      let start = new Date();
-      let end = new Date();
-      start.setSeconds(now.getSeconds() - 200);
-      end.setSeconds(now.getSeconds() - 100);
-      try {
-        job.evaluateStartEndTime(start, end);
-        (0).should.equal(1);
-      } catch (e) {
-        e.message.msgName.should.eql('TIMESPAN_IS_PAST');
-      }
-    });
     it('should return a cronOption: no start and no end', () => {
       const job = Job.getJob('testRecurrentJob1').instance;
-      const cronOption = job.evaluateStartEndTime();
+      const cronOption = job.generateCronOption();
       let now = new Date();
       let end = new Date();
       end.setSeconds(now.getSeconds() + 2147483);
@@ -371,37 +434,54 @@ describe.only('Job Class tests',  () => {
       let now = new Date();
       jobDefinition.name = 'testRecurrentJob2';
       jobDefinition.startCondition.cronOption.currentDate = new Date();
-      jobDefinition.startCondition.cronOption.currentDate.setSeconds(now.getSeconds() + 1000)
+      jobDefinition.startCondition.cronOption.currentDate.setSeconds(now.getSeconds() + 1000);
       jobDefinition.startCondition.cronOption.endDate = new Date();
       jobDefinition.startCondition.cronOption.endDate.setSeconds(now.getSeconds() + 2000);
       const job = new Job(jobDefinition);
-      let start = new Date();
       let end = new Date();
-      start.setSeconds(now.getSeconds() + 800 );
       end.setSeconds(now.getSeconds() + 2200);
-      const cronOption = job.evaluateStartEndTime(start, end);
+      const cronOption = job.generateCronOption(end);
       cronOption.should.eql(jobDefinition.startCondition.cronOption);
     });
     it('should return a cronOption: end time exceeds the max(2147483)', () => {
       let now = new Date();
       jobDefinition.name = 'testRecurrentJob3';
       jobDefinition.startCondition.cronOption.currentDate = new Date();
-      jobDefinition.startCondition.cronOption.currentDate.setSeconds(now.getSeconds() + 1000)
+      jobDefinition.startCondition.cronOption.currentDate.setSeconds(now.getSeconds() + 1000);
       jobDefinition.startCondition.cronOption.endDate = null;
       const job = new Job(jobDefinition);
-      let start = new Date();
       let end = new Date();
       let max = new Date();
-      start.setSeconds(now.getSeconds() + 2000 );
       end.setSeconds(now.getSeconds() + 3147483);
       max.setSeconds(now.getSeconds() + 2147483);
-      const cronOption = job.evaluateStartEndTime(start, end);
-      cronOption.currentDate.should.eql(start);
+      const cronOption = job.generateCronOption(end);
+      cronOption.currentDate.should.eql(jobDefinition.startCondition.cronOption.currentDate);
       (cronOption.endDate - max).should.within(0, 100);
     });
-
+    it('should fail: end date is before the last scheduled occurrence', () => {
+      let now = new Date();
+      jobDefinition.name = 'testRecurrentJob4';
+      jobDefinition.startCondition.cronString = '*/3 * * * * *'; // every 3 seconds
+      jobDefinition.startCondition.cronOption.currentDate = new Date();
+      jobDefinition.startCondition.cronOption.endDate = new Date();
+      jobDefinition.startCondition.cronOption.endDate.setSeconds(now.getSeconds() + 4);
+      try {
+        const job = new Job(jobDefinition);
+        job.scheduleOccurrences();
+        const occurrences = JobOccurrence.getOccurrences({jobName: 'testRecurrentJob4'});
+        occurrences.forEach(occurrence => occurrence.instance.cancel());
+        // console.table(occurrences);
+        let end = new Date();
+        end.setSeconds(now.getSeconds() + 1);
+        job.generateCronOption(end);
+        (1).should.eql(2);
+      } catch (e) {
+        e.message.msgName.should.eql('END_DATE_BEFORE_CURRENT_DATE');
+      }
+    });
     it('should run a job recursively per 2 seconds', async () => {
       jobDefinition.name = 'testRecurrentJob';
+      jobDefinition.startCondition.cronString = '*/2 * * * * *';
       let now = new Date();
       let end = new Date();
       end.setSeconds(now.getSeconds() + 8);
@@ -423,13 +503,13 @@ describe.only('Job Class tests',  () => {
           const jobEntry = Job.getJobs({name: 'testRecurrentJob'})[0];
           const jobOccurrences = JobOccurrence.getOccurrences({jobName: 'testRecurrentJob'});
           jobEntry.status.should.eql(JobStatusEnum.completed);
-          jobEntry.finishedOccurrences.should.eql(3);
+          jobEntry.finishedOccurrences.should.eql(4);
           jobEntry.failedOccurrences.should.eql(0);
           jobEntry.canceledOccurrences.should.eql(0);
-          should(jobEntry.instance).not.be.ok;
-          jobOccurrences.length.should.eql(3);
-          (jobOccurrences[2].endDateTime - jobOccurrences[0].actualStartDateTime).should.within(4400, 4600);
-          (jobOccurrences[2].actualStartDateTime - now).should.within(6000, 8000);
+          should(jobEntry.instance).not.be.ok();
+          jobOccurrences.length.should.eql(4);
+          (jobOccurrences[3].endDateTime - jobOccurrences[0].actualStartDateTime).should.within(6400, 6600);
+          (jobOccurrences[3].actualStartDateTime - now).should.within(6000, 8000);
           resolve(1);
         }, 8500);
       })
