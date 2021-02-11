@@ -13,12 +13,12 @@ export default class Job {
     if (!filter) {
       return this.#Jobs;
     }
+    console.log(filter);
     return this.#Jobs.filter( job => {
       return (!filter.name || filter.name === job.name) &&
-        (!filter.name_includes || job.name.includes(filter.name_includes)) &&
-        (!filter.status || filter.status === job.status) &&
-        (!filter.status_LE || filter.status <= job.status) &&
-        (!filter.mode || filter.mode === job.startCondition.mode) &&
+        (!filter.name_includes || job.name.toUpperCase().includes(filter.name_includes.toUpperCase())) &&
+        (!filter.status || filter.status.includes(job.status)) &&
+        (!filter.mode || filter.mode.includes(job.startCondition.mode)) &&
         (!filter.program || job.steps.findIndex( step => step.program === filter.program));
     });
   }
@@ -260,7 +260,9 @@ export default class Job {
   }
 
   cancel() {
-    const occurrences = JobOccurrence.getOccurrences({jobName: this.name, status: OccurrenceStatusEnum.ready});
+    const occurrences = JobOccurrence.getOccurrences({
+      jobName: this.name,
+      status: [OccurrenceStatusEnum.initial, OccurrenceStatusEnum.ready]});
     occurrences.forEach( occurrence => occurrence.instance.cancel());
     this.#setStatus(JobStatusEnum.canceled);
     this.entry.instance = null;

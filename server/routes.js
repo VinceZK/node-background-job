@@ -5,8 +5,10 @@ export const router = express.Router();
 // Entity Instance Service
 router.post('/api/jobs', JobCtrl.createJob);
 router.get('/api/jobs/:name', JobCtrl.getJob);
-router.post('/api/jobs/schedule', JobCtrl.scheduleJob);
-router.get('/api/jobs', JobCtrl.getJobs);
+router.post('/api/jobs/schedule', JobCtrl.scheduleJobs);
+router.post('/api/jobs/cancel', JobCtrl.cancelJobs);
+router.get('/api/jobs', JobCtrl.searchJobs);
 router.get('/api/jobs/:name/occurrences', JobCtrl.getJobOccurrences);
-router.get('/api/jobPrograms', JobCtrl.getJobPrograms);
+router.delete('/api/jobs/occurrences', JobCtrl.cancelOccurrence);
+router.get('/api/jobPrograms', JobCtrl.searchJobPrograms);
 router.get('/api/jobPrograms/:name', JobCtrl.getJobProgramDefinition);

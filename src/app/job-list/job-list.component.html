@@ -1,0 +1,126 @@
+<div class="card mb-3 pt-3">
+  <div class="pl-4 row">
+    <div class="col-6 form-group">
+      <label for="jobName" class="col-sm-3 col-form-label">Job Name:</label>
+      <input id="jobName" name="jobName" [(ngModel)]="jobName" type="text"
+             class="ml-3 col-sm-6 form-control form-control-sm" (keyup)="enterSearch($event)" autofocus>
+    </div>
+    <div class="col-6 form-group">
+      <label for="program" class="col-sm-3 col-form-label">Program:</label>
+      <input id="program" name="app_name" [(ngModel)]="program" type="text"
+             class="ml-3 col-sm-6 form-control form-control-sm" (keyup)="enterSearch($event)">
+    </div>
+  </div>
+
+  <div class="pl-4 row">
+    <div class="col-6 form-group">
+      <label for="mode" class="col-sm-3 col-form-label">Job Mode:</label>
+      <div id="mode" class="ml-3">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="mode0" [(ngModel)]="mode[0]">
+          <label class="form-check-label" for="mode0">Immediately</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="mode1" [(ngModel)]="mode[1]">
+          <label class="form-check-label" for="mode1">Specific-Time</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="mode2" [(ngModel)]="mode[2]">
+          <label class="form-check-label" for="mode2">Recursively</label>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 form-group">
+      <label for="status" class="col-sm-3 col-form-label">Job Status:</label>
+      <div id="status" class="ml-3">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="status0" [(ngModel)]="status[0]">
+          <label class="form-check-label" for="status0">Initial</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="status1" [(ngModel)]="status[1]">
+          <label class="form-check-label" for="status1">Ready</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="status2" [(ngModel)]="status[2]">
+          <label class="form-check-label" for="status2">Completed</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="status3" [(ngModel)]="status[3]">
+          <label class="form-check-label" for="status3">Canceled</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <button type="button" id="search" class="btn btn-primary btn-sm float-right mr-4" (click)="search()">Search</button>
+  </div>
+</div>
+
+<div class="mt-2 mb-4">
+  <dk-message></dk-message>
+  <div class="btn-toolbar justify-content-end my-2" role="toolbar">
+    <button type="button" id="new" class="btn btn-light btn-sm" (click)="new()">
+      <span class="fas fa-plus"></span> New</button>
+  </div>
+  <table class="table table-bordered table-sm">
+    <thead class="thead-light">
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Description</th>
+      <th scope="col">status</th>
+      <th scope="col">Mode</th>
+      <th scope="col">Finished Occurrences</th>
+      <th scope="col">Failed Occurrences</th>
+      <th scope="col">Canceled Occurrences</th>
+      <th scope="col">Action</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr *ngFor="let job of jobs">
+      <td><a [routerLink]="['/jobs', job.name, {action: 'display'}]">{{job.name}}</a></td>
+      <td>{{job.description?.default}}</td>
+      <td>{{job.status}}</td>
+      <td>{{job.startCondition.mode}}</td>
+      <td>{{job.finishedOccurrences}}</td>
+      <td>{{job.failedOccurrences}}</td>
+      <td>{{job.canceledOccurrences}}</td>
+      <td class="dk-actions">
+        <button title="Display" id="display" class="btn btn-sm" type="button" (click)="display(job.name)">
+          <span class="fas fa-search"></span>
+        </button>
+        <button title="Change" id="change" class="btn btn-sm" type="button" (click)="change(job.name)">
+          <span class="fas fa-pen"></span>
+        </button>
+        <button title="Cancel" id="cancel" class="btn btn-sm" type="button" (click)="cancel(job.name)">
+          <span class="far fa-times-circle"></span>
+        </button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <div class="modal" [class.show]="showCancelConfirmation"
+       [ngStyle]="{'display': displayCancelConfirmation}" id="deletionConfirmation" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmDeletion">Confirm Cancel?</h5>
+          <button type="button" class="close" (click)="cancelCancel()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure to cancel the job '{{toBeCanceledJobName}}'?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="no" class="btn btn-sm btn-secondary" (click)="cancelCancel()">No</button>
+          <button type="button" id="yes" class="btn btn-sm btn-primary" (click)="confirmCancel()">Yes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

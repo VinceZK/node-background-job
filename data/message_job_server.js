@@ -171,6 +171,12 @@ export const msgArray = [
     }
   },
   { msgCat: "job",
+    msgName: "JOB_NOT_EXIST",
+    msgText: {
+      EN: {shortText: "Job %s doesn't exist", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
     msgName: "OCCURRENCE_NOT_EXIST",
     msgText: {
       EN: {shortText: "Job occurrence doesn't exist", longText: "dummy"}
@@ -186,6 +192,32 @@ export const msgArray = [
     msgName: "HOURS_IS_NOT_A_NUMBER",
     msgText: {
       EN: {shortText: "Hours given %s is not a number", longText: "dummy"}
+    }
+  },
+
+  // Success Message
+  { msgCat: "job",
+    msgName: "JOB_IS_SAVED",
+    msgText: {
+      EN: {shortText: "Job %s is saved", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "JOB_IS_SCHEDULED",
+    msgText: {
+      EN: {shortText: "Job %s is scheduled", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "JOB_IS_CANCELED",
+    msgText: {
+      EN: {shortText: "Job %s is canceled", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "OCCURRENCE_IS_CANCELED",
+    msgText: {
+      EN: {shortText: "Occurrence %s of Job %s is canceled", longText: "dummy"}
     }
   }
 ];

@@ -157,7 +157,7 @@ export default class JobProgram {
   static getJobPrograms(nameFilter) {
     const jobPrograms = [];
     for (const [key, value] of Object.entries(this.#jobPrograms )) {
-      if (!nameFilter || key.includes(nameFilter)) {
+      if (!nameFilter || key.toUpperCase().includes(nameFilter.toUpperCase())) {
         jobPrograms.push({
           name: key,
           description: value.description

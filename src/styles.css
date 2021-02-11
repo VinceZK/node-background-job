@@ -1,1 +1,79 @@
 /* You can add global styles to this file, and also import other style files */
+@import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
+
+input.ng-invalid,
+select.ng-invalid{
+  border-color: #dc3545;
+}
+.ng-invalid + .invalid-tooltip {
+  display: block;
+  max-width: inherit;
+}
+.ng-invalid.dk-invalid-feedback,
+.ng-invalid + .dk-invalid-feedback{
+  display: inline;
+}
+.dk-invalid-feedback {
+  display: none;
+  width: 100%;
+  margin-top: .25rem;
+  font-size: 80%;
+  color: #dc3545;
+}
+.primaryKey {
+  color:red;
+}
+.errorMessage{
+  color:red;
+  font-size: .8rem;
+}
+.dk-actions{
+  width: 7rem;
+  min-width: 7rem;
+  max-width: 7rem;
+}
+.dk-fixed-top {
+  position: relative;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 500;
+}
+.treegrid-expander-expanded {
+  background-image: url(assets/img/expended.png);
+}
+.treegrid-expander-collapsed {
+  background-image: url(assets/img/collapsed.png);
+}
+.treegrid-expander {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+}
+.treegrid-indent {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  position: relative;
+}
+.traffic-light {
+  width: 16px;
+  height: 16px;
+  display: table;
+  position: relative;
+  cursor: pointer;
+}
+.red-light {
+  background-image: url(assets/img/red_icon.png);
+  background-size: 16px 16px;
+}
+.yellow-light {
+  background-image: url(assets/img/yellow_icon.png);
+  background-size: 16px 16px;
+}
+.green-light {
+  background-image: url(assets/img/green_icon.png);
+  background-size: 16px 16px;
+}

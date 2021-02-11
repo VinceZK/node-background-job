@@ -14,7 +14,7 @@ export default class JobOccurrence {
     return this.#occurrences.filter( occurrence => {
       return (!filter.uuid || filter.uuid === occurrence.uuid) &&
         (!filter.jobName || filter.jobName === occurrence.jobName) &&
-        (!filter.status || filter.status === occurrence.status);
+        (!filter.status || filter.status.includes(occurrence.status));
     });
   }
   static getLastScheduledOccurrence(jobName) {

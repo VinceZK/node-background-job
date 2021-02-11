@@ -5,12 +5,31 @@ import compression from 'compression';
 import {router} from "./server/routes.js";
 import TestJobProgram from "./server/jobPrograms/testJobProgram.js";
 import Job from "./server/job.js";
+import * as jor from 'json-on-relations';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
+
+app.use(express.static(path.join(__dirname, 'app')));
+app.get('/', (req, res) => { // The default index.html
+  res.sendFile(path.join(__dirname, 'app/job/index.html'));
+});
 
 app.use(cors());
 app.use(express.json());
 app.use(compression());
+
+// Get the default router
+router.use(jor.Routes); // JOR Routes
+router.get('/jor/*', (req, res) => { // Open the jor page
+  res.sendFile(path.join(__dirname, 'app/jor/index.html'));
+});
+router.get('/job/*', (req, res) => { // The default index.html
+  res.sendFile(path.join(__dirname, 'app/job/index.html'));
+});
 
 app.use('/', router);
 
@@ -53,7 +72,7 @@ process.on('SIGINT',function(){
   process.exit()
 });
 
-app.listen(8000, () => console.log('Example app listening on port 8000!'));
+app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
 // if (cluster.isMaster) {
 //   console.log(`Master ${process.pid} is running`);
