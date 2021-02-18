@@ -293,7 +293,7 @@ let DataDomainDetailComponent = class DataDomainDetailComponent {
             this.entitySearchHelp.METHOD = function (entityService) {
                 return (searchTerm) => entityService.listEntityType(searchTerm);
             }(this.entityService);
-            this.entitySearchHelp.BEHAVIOUR = 'M';
+            this.entitySearchHelp.BEHAVIOUR = 'A';
             this.entitySearchHelp.MULTI = false;
             this.entitySearchHelp.FUZZY_SEARCH = true;
             this.entitySearchHelp.FIELDS = [
@@ -745,7 +745,7 @@ let AttributeMetaComponent = class AttributeMetaComponent {
             this.dataElementSearchHelp.METHOD = function (entityService) {
                 return (searchTerm) => entityService.listDataElement(searchTerm);
             }(this.entityService);
-            this.dataElementSearchHelp.BEHAVIOUR = 'M';
+            this.dataElementSearchHelp.BEHAVIOUR = 'A';
             this.dataElementSearchHelp.MULTI = false;
             this.dataElementSearchHelp.FUZZY_SEARCH = true;
             this.dataElementSearchHelp.FIELDS = [
@@ -2459,7 +2459,7 @@ let SearchHelpDetailComponent = class SearchHelpDetailComponent {
             this.entitySearchHelp.METHOD = function (entityService) {
                 return (searchTerm) => entityService.listEntityType(searchTerm);
             }(this.entityService);
-            this.entitySearchHelp.BEHAVIOUR = 'M';
+            this.entitySearchHelp.BEHAVIOUR = 'A';
             this.entitySearchHelp.MULTI = false;
             this.entitySearchHelp.FUZZY_SEARCH = true;
             this.entitySearchHelp.FIELDS = [
@@ -3042,6 +3042,7 @@ let RelationshipDetailComponent = class RelationshipDetailComponent {
             this.relationshipForm.get('RELATIONSHIP_ID').setValidators(this._validateRelationshipID);
             this.relationshipForm.get('RELATIONSHIP_ID').setAsyncValidators(this.uniqueRelationshipValidator.validate.bind(this.uniqueRelationshipValidator));
             this.relationshipForm.get('TIME_DEPENDENT').enable();
+            this.relationshipForm.get('VALID_PERIOD').disable(); // TIME_DEPENDENT by default is not checked
             formArray.push(this.fb.group({
                 ROLE_ID: [''],
                 ROLE_DESC: [''],
@@ -3111,6 +3112,9 @@ let RelationshipDetailComponent = class RelationshipDetailComponent {
         else { // In Display Mode -> Change Mode
             this.readonly = false;
             this.relationshipForm.get('TIME_DEPENDENT').enable();
+            if (!this.relationshipForm.get('TIME_DEPENDENT').value) {
+                this.relationshipForm.get('VALID_PERIOD').disable();
+            }
             this.relationshipForm.get('SINGLETON').enable();
             this.attrComponent.switchEditDisplay(this.readonly);
             this.involveFormArray.controls.forEach(involveFormGroup => {
@@ -3561,7 +3565,7 @@ let DataElementDetailComponent = class DataElementDetailComponent {
             this.searchHelpSearchHelp.METHOD = function (entityService) {
                 return (searchTerm) => entityService.listSearchHelp(searchTerm);
             }(this.entityService);
-            this.searchHelpSearchHelp.BEHAVIOUR = 'M';
+            this.searchHelpSearchHelp.BEHAVIOUR = 'A';
             this.searchHelpSearchHelp.MULTI = false;
             this.searchHelpSearchHelp.FUZZY_SEARCH = true;
             this.searchHelpSearchHelp.FIELDS = [
@@ -3637,6 +3641,9 @@ let DataElementDetailComponent = class DataElementDetailComponent {
                 this.dataElementForm.get('DOMAIN_ID').disable();
                 this.dataElementForm.get('DATA_TYPE').disable();
                 this.dataElementForm.get('SEARCH_HELP_EXPORT_FIELD').disable();
+            }
+            else {
+                this.dataElementForm.get('SEARCH_HELP_EXPORT_FIELD').enable();
             }
         }
         else {

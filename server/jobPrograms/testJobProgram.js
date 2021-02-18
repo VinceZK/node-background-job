@@ -22,11 +22,36 @@ export default class TestJobProgram extends JobProgram {
 JobProgram.registerJobProgram('testJobProgram', {
   className: 'TestJobProgram',
   class: TestJobProgram,
-  description: { EN: 'description of job program' },
-  parameterGroups: {
-    GROUP1: { position: 1, text: 'text of group' },
-    GROUP2: { position: 2 }},
+  description: {
+    DEFAULT: 'description of job program',
+    EN: 'description of job program'
+  },
   parameterDefinitions: {
-    param1: { position: 1, text: {default: 'Label1'}, group: 'GROUP1', mandatory: true},
-    PARAM2: { position: 2, group: 'GROUP2'}}
+    GROUP1: {
+      text: 'Group One',
+      parameters: {
+        PARAM1: {
+          type: 1,
+          text: 'Label1',
+          mandatory: true,
+        },
+        PARAM2: {
+          dataElement: 'USER_ID',
+          defaultValue: 'DH001'
+        }
+      }
+    },
+    GROUP2: {
+      text: 'Group Two',
+      parameters: {
+        PARAM3: {
+          type: 2,
+          text: 'Label 3'
+        },
+        PARAM4: {
+          hidden: true
+        }
+      }
+    },
+  }
 });

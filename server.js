@@ -4,6 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import {router} from "./server/routes.js";
 import TestJobProgram from "./server/jobPrograms/testJobProgram.js";
+import TestJobProgram2 from "./server/jobPrograms/testJobProgram2.js";
 import Job from "./server/job.js";
 import * as jor from 'json-on-relations';
 import * as path from 'path';
@@ -23,10 +24,12 @@ app.use(express.json());
 app.use(compression());
 
 // Get the default router
-router.use(jor.Routes); // JOR Routes
-router.get('/jor/*', (req, res) => { // Open the jor page
-  res.sendFile(path.join(__dirname, 'app/jor/index.html'));
-});
+if (process.env.USE_DB === 'true') {
+  router.use(jor.Routes); // JOR Routes
+  router.get('/jor/*', (req, res) => { // Open the jor page
+    res.sendFile(path.join(__dirname, 'app/jor/index.html'));
+  });
+}
 router.get('/job/*', (req, res) => { // The default index.html
   res.sendFile(path.join(__dirname, 'app/job/index.html'));
 });
@@ -37,7 +40,7 @@ new Job(  {
   name: 'testImmediateJob',
   description: 'immediate job',
   steps: [
-    {program: 'testJobProgram', parameters: {param1: 'value1'}}
+    {program: 'testJobProgram', parameters: {PARAM1: 'value1'}}
   ],
   startCondition: { mode: 0 }
 });
@@ -48,7 +51,7 @@ new Job(  {
   name: 'testSpecTimeJob',
   description: 'specific time job',
   steps: [
-    {program: 'testJobProgram', parameters: {param1: 'value2'}}
+    {program: 'testJobProgram', parameters: {PARAM1: 'value2'}}
   ],
   startCondition: { mode: 1, specificTime:  specificTime.toString() }
 });
@@ -58,7 +61,7 @@ new Job(  {
   name: 'testRecursiveJob',
   description: 'specific time job',
   steps: [
-    {program: 'testJobProgram', parameters: {param1: 'value2'}}
+    {program: 'testJobProgram', parameters: {PARAM1: 'value2'}}
   ],
   startCondition: {
     mode: 2,

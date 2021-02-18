@@ -4,13 +4,18 @@ export class Job {
   name!: string;
   description?: Text;
   status!: number;
+  mode!: number;
   identity?: Identity;
   steps!: Step[];
   startCondition!: StartCondition;
   outputSetting?: OutputSetting;
-  finishedOccurrences!: number;
-  failedOccurrences!: number;
-  canceledOccurrences!: number;
+  finishedOccurrences?: number;
+  failedOccurrences?: number;
+  canceledOccurrences?: number;
+  createdBy?: string;
+  createTime?: string;
+  lastChangedBy?: string;
+  lastChangeTime?: string;
 }
 
 export class JobOccurrence {
@@ -25,40 +30,28 @@ export class JobOccurrence {
   applicationLog?: ApplicationLog[];
 }
 
-export class JobProgram {
-  name!: string;
-  description?: Text;
-  className!: string;
-  parameterGroups?: ParameterGroups;
-  parameterDefinitions?: ParameterDefinitions;
-}
-
 export class Identity {
   id!: string;
 }
 
 export class Step {
   program!: string;
-  parameters?: Parameters;
+  parameters?: ParameterValueParis;
   status?: number;
   output?: any;
 }
 
-export class Parameters {
+export class ParameterValueParis {
   [key: string]: any;
 }
 
 export class StartCondition {
   mode!: number;
-  specificTime?: string;
-  cronString?: string;
-  cronOption?: CronOption;
-}
-
-export class CronOption {
-  currentDate?: string;
-  endDate?: string;
-  tz?: string;
+  specificTime?: string | null;
+  cronString?: string | null;
+  cronCurrentDate?: string | null;
+  cronEndDate?: string | null;
+  tz?: string | null;
 }
 
 export class OutputSetting {
@@ -70,13 +63,11 @@ export class ApplicationLog {
   message!: Message;
 }
 
-export class ParameterGroups {
-  [key: string]: ParameterGroup;
-}
-
-export class ParameterGroup {
-  position!: number;
-  text?: Text;
+export class JobProgram {
+  name!: string;
+  className!: string;
+  description?: Text;
+  parameterDefinitions?: ParameterDefinitions;
 }
 
 export class ParameterDefinitions {
@@ -84,14 +75,25 @@ export class ParameterDefinitions {
 }
 
 export class ParameterDefinition {
-  position: number | undefined;
   text?: Text;
-  group: string | undefined;
-  mandatory: boolean | undefined;
+  parameters!: Parameters;
+}
+
+export class Parameter {
+  type?: number;
   dataElement?: string;
+  text?: Text;
+  defaultValue?: string;
+  multiple = false;
+  mandatory = false;
+  hidden = false;
+}
+
+export class Parameters {
+  [key: string]: Parameter;
 }
 
 export class Text {
-  default!: string;
+  DEFAULT!: string;
   [key: string]: string;
 }

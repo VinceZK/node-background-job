@@ -63,6 +63,35 @@ export class JobListComponent implements OnInit {
     }
   }
 
+  jobMode(mode: number): string {
+    switch (mode) {
+      case 0:
+        return 'Immediately';
+      case 1:
+        return 'Specific-time';
+      case 2:
+        return 'Recursively';
+      case 3:
+        return 'Event-based';
+      default:
+        return '';
+    }
+  }
+
+  jobStatus(status: number): string {
+    switch (status) {
+      case 0:
+        return 'Initial';
+      case 1:
+        return 'Ready';
+      case 2:
+        return 'Completed';
+      case 3:
+        return 'Canceled';
+      default:
+        return '';
+    }
+  }
   new(): void {
     this.router.navigate(['jobs', '/', {action: 'new'}]);
   }

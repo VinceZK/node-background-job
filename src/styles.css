@@ -27,10 +27,25 @@ select.ng-invalid{
   color:red;
   font-size: .8rem;
 }
+.dk-job-step-main {
+  display: block;
+  width: 70%;
+}
+.dk-table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  border: none;
+}
+.dk-program{
+  width: 50rem;
+  min-width: 30rem;
+  max-width: 70rem;
+}
 .dk-actions{
-  width: 7rem;
-  min-width: 7rem;
-  max-width: 7rem;
+  width: 9rem;
+  min-width: 9rem;
+  max-width: 9rem;
 }
 .dk-fixed-top {
   position: relative;
@@ -38,6 +53,11 @@ select.ng-invalid{
   right: 0;
   left: 0;
   z-index: 500;
+}
+.dk-parameter-area {
+  overflow-y: scroll;
+  min-height: 10rem;
+  max-height: 50rem;
 }
 .treegrid-expander-expanded {
   background-image: url(assets/img/expended.png);

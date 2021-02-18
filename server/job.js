@@ -3,17 +3,92 @@ import CronParser from 'cron-parser';
 import JobOccurrence from "./jobOccurrence.js";
 import JobProgram from "./jobProgram.js";
 import {JobStatusEnum, OccurrenceStatusEnum, StartConditionEnum} from "./constants.js";
+import * as jor from 'json-on-relations';
+import { v4 as uuid } from 'uuid';
 
 export default class Job {
   static #Jobs = [];
+
+  /**
+   * Get a job entry from the cache
+   * @param jobName
+   * @returns {*}
+   */
   static getJob(jobName) {
     return this.#Jobs.find(job => job.name === jobName);
   }
+  /**
+   * Get a job entry from the DB
+   * @param jobName
+   * @returns {Promise<unknown>}
+   */
+  static async getJobDB(jobName) {
+    return new Promise( (resolve, reject) => {
+      jor.Entity.getInstanceByID({RELATION_ID: 'job', name: jobName}, (errs, result) => {
+        if (errs) {
+          reject(errs);
+        } else {
+          const jobEntry = {name: jobName};
+          jobEntry.status = result.job[0].status;
+          jobEntry.mode = result.job[0].mode;
+          jobEntry.description = {};
+          result.r_text.forEach( text => jobEntry.description[text.langu] = text.text);
+          if (result.r_job_identity) {
+            jobEntry.identity = { ...result.r_job_identity[0] };
+          }
+          jobEntry.steps = result.r_job_steps.map( step => {
+            return { program: step.program, parameters: step.parameters }
+          });
+          jobEntry.startCondition = { ...result.r_start_condition[0] };
+          if (result.r_output_setting) {
+            jobEntry.outputSetting = { ...result.r_output_setting[0] };
+          }
+          jobEntry.finishedOccurrences = result.job[0].finishedOccurrences;
+          jobEntry.failedOccurrences = result.job[0].failedOccurrences;
+          jobEntry.canceledOccurrences = result.job[0].canceledOccurrences;
+          jobEntry.createdBy = result.job[0].createdBy;
+          jobEntry.createTime = result.job[0].createTime;
+          jobEntry.lastChangedBy = result.job[0].lastChangedBy;
+          jobEntry.lastChangeTime = result.job[0].lastChangeTime;
+          resolve(jobEntry);
+        }
+      })
+    });
+  }
+
+  static async changeJob(changedJobDefinition) {
+    const oldJobIndex = this.#Jobs.findIndex( job => job.name === changedJobDefinition.name);
+    if (oldJobIndex === -1) {
+      throw new JobError('JOB_NOT_EXIST');
+    }
+    const oldJobEntry = this.#Jobs[oldJobIndex];
+    if (oldJobEntry.status === JobStatusEnum.scheduled || oldJobEntry.status === JobStatusEnum.completed ) {
+      throw new JobError('JOB_CANNOT_BE_CHANGED', oldJobEntry.status);
+    }
+    this.#Jobs.splice(oldJobIndex, 1); // Delete the old job entry
+    const newJob = new Job(changedJobDefinition);
+    if (process.env.USE_DB !== 'true') {
+      return changedJobDefinition;
+    }
+    try {
+      await newJob.changeJobDB();
+      return changedJobDefinition;
+    } catch (errors) {
+      const newJobIndex = this.#Jobs.findIndex( job => job.name === changedJobDefinition.name);
+      this.#Jobs.splice(newJobIndex, 1); // Delete the new job entry
+      this.#Jobs.push(oldJobEntry); // Restore the old job entry
+      return errors ;
+    }
+  }
+  /**
+   * Get jobs from the cache
+   * @param filter
+   * @returns {[]|*[]}
+   */
   static getJobs(filter) {
     if (!filter) {
       return this.#Jobs;
     }
-    console.log(filter);
     return this.#Jobs.filter( job => {
       return (!filter.name || filter.name === job.name) &&
         (!filter.name_includes || job.name.toUpperCase().includes(filter.name_includes.toUpperCase())) &&
@@ -22,6 +97,71 @@ export default class Job {
         (!filter.program || job.steps.findIndex( step => step.program === filter.program));
     });
   }
+  /**
+   * Get jobs from the DB
+   * @returns {Promise<void>}
+   */
+  static async getJobsDB(filter) {
+    let queryObject = {ENTITY_ID: 'job', RELATION_ID: 'job', DISTINCT: true};
+    queryObject.PROJECTION = [
+      'name', 'status', 'mode', 'finishedOccurrences', 'failedOccurrences', 'canceledOccurrences',
+      {FIELD_NAME: 'text', ALIAS: 'description', RELATION_ID: 'r_text'}
+    ];
+    queryObject.FILTER = [{
+      FIELD_NAME: 'langu',
+      RELATION_ID: 'r_text',
+      OPERATOR: 'EQ',
+      LOW: 'DEFAULT'
+    }];
+    if (filter && filter.name_includes) {
+      queryObject.FILTER.push({
+        FIELD_NAME: 'name',
+        OPERATOR: 'CN',
+        LOW: filter.name
+      });
+    }
+    if (filter && filter.status) {
+      filter.status.forEach( status => {
+        queryObject.FILTER.push({
+          FIELD_NAME: 'status',
+          OPERATOR: 'EQ',
+          LOW: status
+        });
+      });
+    }
+    if (filter && filter.mode) {
+      filter.mode.forEach( mode => {
+        queryObject.FILTER.push({
+          FIELD_NAME: 'mode',
+          OPERATOR: 'EQ',
+          LOW: mode
+        });
+      });
+    }
+    if (filter && filter.program) {
+      queryObject.FILTER.push({
+        FIELD_NAME: 'program',
+        RELATION_ID: 'r_job_steps',
+        OPERATOR: 'EQ',
+        LOW: filter.program
+      });
+    }
+    return new Promise((resolve, reject) => {
+      jor.Query.run(queryObject, async (errs, rows) => {
+        if (errs) {
+          reject(errs);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  }
+  /**
+   * Check the given timespan from start to end
+   * @param start
+   * @param end
+   * @param now
+   */
   static checkStartEndTime(start, end, now) {
     if (start && end && start >= end) {
       throw new JobError('END_DATE_BEFORE_CURRENT_DATE');
@@ -55,12 +195,11 @@ export default class Job {
    */
   constructor(jobDefinition) {
     this.#checkJobName(jobDefinition.name);
-    this.#checkDescription(jobDefinition.description);
     this.identity = jobDefinition.identity;
     this.#parseSteps(jobDefinition.steps);
     this.#parseStartCondition(jobDefinition.startCondition);
     this.outputSetting = jobDefinition.outputSetting;
-    this.#cacheJob();
+    this.#cacheJob(jobDefinition);
   }
 
   #checkJobName(jobName) {
@@ -72,12 +211,11 @@ export default class Job {
     }
     this.name = jobName;
   }
-  #checkDescription(description) {
+  #deriveDescription(description) {
     if (description) {
-      if (typeof description === 'string') {
-        this.description = { default: description };
-      }
+      return null;
     }
+    return typeof description === 'string'? { DEFAULT: description } : description;
   }
   /**
    * Parse the steps
@@ -154,6 +292,7 @@ export default class Job {
           throw new JobError('SCHEDULED_DATE_PAST');
         }
         this.endDateTime = this.startDateTime;
+        this.startCondition.specificTime = this.startDateTime;
         break;
       case StartConditionEnum.recurrently:
         let currentDate = null;
@@ -186,9 +325,11 @@ export default class Job {
    * However, some key information should be still preserved in the cache.
    * If a DB service is provided, the information in the cache is persisted.
    */
-  #cacheJob() {
+  #cacheJob(jobDefinition) {
+    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     this.entry = {
       name: this.name,
+      description: this.#deriveDescription(jobDefinition.description),
       status: JobStatusEnum.initial,
       identity: { ...this.identity },
       steps: [],
@@ -197,6 +338,10 @@ export default class Job {
       finishedOccurrences: 0,
       failedOccurrences: 0,
       canceledOccurrences: 0,
+      createdBy: jobDefinition.createdBy || 'DH001',
+      createTime: jobDefinition.createTime || now,
+      lastChangedBy: jobDefinition.createdBy || 'DH001',
+      lastChangeTime: now,
       instance: this
     };
     JobOccurrence.assignSteps(this.steps, this.entry.steps);
@@ -204,17 +349,99 @@ export default class Job {
     Job.#Jobs.push(this.entry);
   }
 
-  scheduleOccurrences(startDateTime, endDateTime) {
-    this.#setStatus(JobStatusEnum.scheduled);
+  /**
+   * Persist a new job in DB.
+   * @returns {Promise<unknown>}
+   */
+  async createJobDB() {
+    return new Promise( (resolve, reject) => {
+      jor.Entity.createInstance(this.#convert2JorInstance(),  (errors, results) => {
+        if (errors) {
+          // Remove the cached entry in case persistent failed
+          const index = Job.#Jobs.findIndex( job => job.name === this.name);
+          Job.#Jobs.splice(index, 1);
+          reject(errors);
+        } else {
+          this.INSTANCE_GUID = results.INSTANCE_GUID;
+          resolve(results);
+        }
+      });
+    });
+  }
+
+  async changeJobDB() {
+    return new Promise( (resolve, reject) => {
+      jor.Entity.overwriteInstance(this.#convert2JorInstance(),  (errors) => {
+        if (errors) {
+          reject(errors);
+        } else {
+          resolve(0);
+        }
+      });
+    });
+  }
+
+  #convert2JorInstance() {
+    const jobInstance = {ENTITY_ID: 'job'};
+    jobInstance.job = [
+      { name: this.entry.name, status: this.entry.status,
+        finishedOccurrences: this.entry.finishedOccurrences,
+        failedOccurrences: this.entry.failedOccurrences,
+        canceledOccurrences: this.entry.canceledOccurrences,
+        mode: this.entry.startCondition.mode,
+        createdBy: this.entry.createdBy,
+        createTime: this.entry.createTime,
+        lastChangedBy: this.entry.lastChangedBy,
+        lastChangeTime: this.entry.lastChangeTime,
+        jobServer: process.env.JOB_SERVER, jobNode: process.pid }
+    ];
+    if (this.description) {
+      jobInstance.r_text = Object.keys(this.description).map( languCode => {
+        return { key: uuid(), langu: languCode, text: this.description[languCode]}
+      });
+    }
+    if (this.identity) {
+      jobInstance.r_job_identity = [{...this.identity}];
+      jobInstance.r_job_identity[0].key = uuid();
+    }
+    jobInstance.r_job_steps = this.entry.steps.map( (step, index) => {
+      return { jobName: this.name, sequence: index+1, program: step.program, parameters: JSON.stringify(step.parameters) }
+    });
+    jobInstance.r_start_condition = [
+      { key: uuid(), mode: this.entry.startCondition.mode,
+        cronString: this.entry.startCondition.cronString ,
+        cronCurrentDate: this.entry.startCondition.cronOption? this.entry.startCondition.cronOption.currentDate : null,
+        cronEndDate: this.entry.startCondition.cronOption? this.entry.startCondition.cronOption.endDate : null}
+    ];
+    if (this.entry.startCondition.specificTime) {
+      jobInstance.r_start_condition[0].specificTime =
+        this.entry.startCondition.specificTime.slice(0, 19).replace('T', ' ');
+    }
+    if (this.entry.startCondition.cronOption && this.entry.startCondition.cronOption.tz) {
+      jobInstance.r_start_condition[0].tz = this.entry.startCondition.cronOption.tz;
+    }
+    if (this.outputSetting) {
+      jobInstance.r_output_setting = [{ ...this.outputSetting }];
+      jobInstance.r_output_setting[0].key = uuid();
+    }
+    jobInstance.relationships = [];
+    return jobInstance;
+  }
+
+  async scheduleOccurrences(startDateTime, endDateTime) {
+    await this.#setStatus(JobStatusEnum.scheduled);
     switch (this.startCondition.mode) {
       case StartConditionEnum.immediately:
-        new JobOccurrence(this, this.startDateTime);
+        const jobOcc = new JobOccurrence(this, this.startDateTime);
+        if(process.env.USE_DB === 'true') {
+          await jobOcc.persistJobOccurrence();
+        }
         break;
       case StartConditionEnum.specificTime:
-        this.#scheduleSpecificTime(endDateTime);
+        await this.#scheduleSpecificTime(endDateTime);
         break;
       case StartConditionEnum.recurrently:
-        this.#scheduleRecurrently(endDateTime);
+        await this.#scheduleRecurrently(endDateTime);
         break;
       case StartConditionEnum.onEvent:
         break;
@@ -223,23 +450,49 @@ export default class Job {
     }
   }
 
-  updateStatistics(occurrenceStatus, scheduledDateTime) {
+  async updateStatistics(occurrenceStatus, scheduledDateTime) {
+    if (process.env.USE_DB === 'true') {
+      let changeInstance = {
+        ENTITY_ID: 'job', INSTANCE_GUID: this.INSTANCE_GUID,
+        job: {
+          action: 'change',
+          finishedOccurrences: this.entry.finishedOccurrences,
+          failedOccurrences: this.entry.failedOccurrences,
+          canceledOccurrences: this.entry.canceledOccurrences}
+      };
+      this.#setOccurrenceStatistics(occurrenceStatus, changeInstance.job);
+      return new Promise( (resolve, reject) => {
+        jor.Entity.changeInstance(changeInstance, (errors) => {
+          if (errors) {
+            reject(errors);
+          } else {
+            this.#setOccurrenceStatistics(occurrenceStatus, this.entry);
+            resolve(0);
+          }
+        });
+      });
+    } else {
+      this.#setOccurrenceStatistics(occurrenceStatus, this.entry);
+    }
+    if (!this.hasNextOccurrence(scheduledDateTime)) {
+      await this.#setStatus(JobStatusEnum.completed);
+      this.entry.instance = null;
+    }
+  }
+
+  #setOccurrenceStatistics(occurrenceStatus, entry) {
     switch (occurrenceStatus) {
       case OccurrenceStatusEnum.finished:
-        this.entry.finishedOccurrences++;
+        entry.finishedOccurrences++;
         break;
       case OccurrenceStatusEnum.failed:
-        this.entry.failedOccurrences++;
+        entry.failedOccurrences++;
         break;
       case OccurrenceStatusEnum.canceled:
-        this.entry.canceledOccurrences++;
+        entry.canceledOccurrences++;
         break;
       default:
       // Do nothing
-    }
-    if (!this.hasNextOccurrence(scheduledDateTime)) {
-      this.#setStatus(JobStatusEnum.completed);
-      this.entry.instance = null;
     }
   }
 
@@ -259,18 +512,38 @@ export default class Job {
     }
   }
 
-  cancel() {
+  async cancel() {
     const occurrences = JobOccurrence.getOccurrences({
       jobName: this.name,
       status: [OccurrenceStatusEnum.initial, OccurrenceStatusEnum.ready]});
-    occurrences.forEach( occurrence => occurrence.instance.cancel());
-    this.#setStatus(JobStatusEnum.canceled);
+    for (const occurrence of occurrences) {
+      await occurrence.instance.cancel();
+    }
+    await this.#setStatus(JobStatusEnum.canceled);
     this.entry.instance = null;
   }
 
-  #setStatus(status) {
-    if (status >= this.entry.status && this.entry.status < JobStatusEnum.completed) {
-      this.entry.status = status;
+  async #setStatus(status) {
+    if ((status === JobStatusEnum.scheduled && this.entry.status === JobStatusEnum.canceled) || //Cancel-->Scheduled
+        (status >= this.entry.status && this.entry.status < JobStatusEnum.completed)) {
+      if (process.env.USE_DB === 'true') {
+        let changeInstance = {
+          ENTITY_ID: 'job', INSTANCE_GUID: this.INSTANCE_GUID,
+          job: {action: 'change', status: status}
+        };
+        return new Promise( (resolve, reject) => {
+          jor.Entity.changeInstance(changeInstance, (errors) => {
+            if (errors) {
+              reject(errors);
+            } else {
+              this.entry.status = status;
+              resolve(0);
+            }
+          });
+        });
+      } else {
+        this.entry.status = status;
+      }
     } else {
       throw new JobError('INCORRECT_JOB_STATUS_CHANGE', this.entry.status, status);
     }
@@ -281,14 +554,17 @@ export default class Job {
    * check if the specific job start time is before the endDateTime
    * @param endDateTime
    */
-  #scheduleSpecificTime(endDateTime) {
+  async #scheduleSpecificTime(endDateTime) {
     if (endDateTime < this.startDateTime) {
       return;
     }
     // startDateTime should be no later than now for 2147483 seconds.
     // Because the function setTimeout(maxTimeout) has the max waiting time of 2147483647ms, about 2147483s
     if (this.startDateTime.getTime() - Date.now() <= 2147483000) {
-      new JobOccurrence(this, this.startDateTime);
+      const jobOcc = new JobOccurrence(this, this.startDateTime);
+      if (process.env.USE_DB === 'true') {
+        await jobOcc.persistJobOccurrence();
+      }
     }
   }
   /**
@@ -297,7 +573,7 @@ export default class Job {
    * If there is no existing occurrence, then starts from the job startDateTime.
    * @param endDateTime
    */
-  #scheduleRecurrently(endDateTime) {
+  async #scheduleRecurrently(endDateTime) {
     const cronOption = this.generateCronOption(endDateTime);
     let now = new Date();
     try {
@@ -308,7 +584,10 @@ export default class Job {
           if ( occurrenceTime.getTime() >= now.getTime()) {
             // Start date could be in the past and the occurrences in the past are either canceled, or not run.
             // Thus these occurrences should be skipped.
-            new JobOccurrence(this, occurrenceTime);
+            const jobOcc = new JobOccurrence(this, occurrenceTime);
+            if (process.env.USE_DB === 'true') {
+              await jobOcc.persistJobOccurrence();
+            }
           }
         } catch (e) {
           break;

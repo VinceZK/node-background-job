@@ -11,13 +11,24 @@ export default class JobProgram {
    *   className: '<javascript class which extends JobProgram>',
    *   class: <The Class of the job program>
    *   description: 'description of the job program',
-   *   parameterGroups: {
-   *     GROUP1: {position: 1, text: {default: 'text of group1'}},
-   *     GROUP2: {position: 2, text: {default: 'text of group2'}}
-   *   },
    *   parameterDefinitions: {
-   *     PARAM1: {position: 1, text: {default: 'Label1'}, group: 'GROUP1', dataElement: 'FIELD1'},
-   *     PARAM2: {position: 2, text: {default: 'Label2'}, group: 'GROUP2', dataElement: 'FIELD2'}
+   *     GROUP1: {
+   *       text: {DEFAULT: 'text of group1'},
+   *       parameters: {
+   *         PARAM1: {
+   *           dataElement: 'ELEMENT',
+   *           text: {DEFAULT: 'Label1'},
+   *           multiple: true,
+   *           mandatory: true
+   *         },
+   *         PARAM12 {
+   *           dataElement: 'ELEMENT',
+   *           text: {DEFAULT: 'Label2'},
+   *           multiple: true,
+   *           mandatory: true
+   *         },
+   *       }
+   *     }
    *   }
    * }
    */
@@ -53,67 +64,76 @@ export default class JobProgram {
      * jobDescription has the following generic type for multi-languages.
      * generic text @type
      * {
-     *   'default': 'text in default language',
+     *   'DEFAULT': 'text in default language',
      *   'EN': 'text in English',
      *   'ZH': '中文文本'
      * }
      */
-    if (programDefinition.description) {
-      if (typeof programDefinition.description === 'string') {
-        programDefinition.description = {default: programDefinition.description};
-      }
-    }
-    /**
-     * parameterGroups @type
-     * {
-     *   'GROUP1': {position: 1, text: {generic text type}},
-     *   'GROUP2': {position: 2, text: {generic text type}},
-     * }
-     */
-    if (!programDefinition.parameterGroups) {
-      programDefinition.parameterGroups = {};
-    } else {
-      for (const group in programDefinition.parameterGroups) {
-        let groupDefinition = programDefinition.parameterGroups[group];
-        this.#checkPosition(groupDefinition['position'], group);
-        this.#deriveText(groupDefinition, 'text', group);
-      }
-    }
+    this.#deriveText(programDefinition, 'description', name);
     /**
      * parameterDefinition @type
-     * {
-     *   'PARAMETER1': { position: 1, text: {generic text type}, group: 'GROUP1',
-     *                   mandatory: true, hidden: false, readonly: false, searchHelp: '', },
-     *   'PARAMETER2': { position: 2, text: {generic text type}, group: 'GROUP2',
-     *                   mandatory: true, hidden: false, readonly: false, searchHelp: '', },
-     * }
+     *   parameterDefinitions: {
+     *     GROUP1: {
+     *       text?: {DEFAULT: 'text of group1'},
+     *       parameters!: {
+     *         PARAM1: {
+     *           type?: [1: char, 2: integer, 3: boolean, 7: date, 8: timestamp],
+     *           dataElement?: 'ELEMENT',
+     *           radioButtons?: {
+     *             option1: {DEFAULT: true, text: {DEFAULT: 'Label2'} },
+     *             option2: {text: {DEFAULT: 'Label2'} }
+     *           }
+     *           text?: {DEFAULT: 'Label1'},
+     *           multiple: true,
+     *           mandatory: true,
+     *           hidden: false,
+     *           defaultValue: ''
+     *         },
+     *         PARAM12 {
+     *           dataElement: 'ELEMENT',
+     *           text: {DEFAULT: 'Label2'},
+     *           multiple: true,
+     *           mandatory: true
+     *         },
+     *       }
+     *     }
+     *   }
      */
     if (!programDefinition.parameterDefinitions) {
       programDefinition.parameterDefinitions = {};
     } else {
-      for (const parameter in programDefinition.parameterDefinitions) {
-        let parameterDefinition = programDefinition.parameterDefinitions[parameter];
-        this.#checkPosition(parameterDefinition['position'], parameter);
-        this.#deriveText(parameterDefinition, 'text', parameter);
-        if (!parameterDefinition['group']) {
-          throw new JobProgramError('MISSING_GROUP_ASSIGNMENT', parameter);
+      const paramNameIndex = [];
+      for (const [groupName, groupDefinition] of Object.entries(programDefinition.parameterDefinitions)) {
+        this.#deriveText(groupDefinition, 'text', groupName);
+        const parameters = groupDefinition.parameters;
+        if (!parameters || Object.keys(parameters).length === 0) {
+          throw new JobProgramError('NO_PARAMETERS_IN_GROUP', groupName)
         }
-        if (!programDefinition.parameterGroups[parameterDefinition['group']]) {
-          throw new JobProgramError( 'INVALID_GROUP',  parameter);
+        for (const [paramName, paramDefinition] of Object.entries(parameters)) {
+          let index = paramNameIndex.findIndex( name => name === paramName);
+          if (index !== -1) {
+            throw new JobProgramError('DUPLICATE_JOB_PARAMETERS', paramName);
+          }
+          paramNameIndex.push(paramName);
+          this.#deriveText(paramDefinition, 'text', paramName);
+          if (paramDefinition.type &&
+            ![1, 2, 3, 7, 8].includes(paramDefinition.type)) {
+            throw new JobProgramError('INVALID_PARAMETER_TYPE', programDefinition.type);
+          }
+          if (paramDefinition.radioButtons) {
+            let numDefaultOption = 0;
+            for (const [optionName, optionDefinition] of Object.entries(paramDefinition.radioButtons)) {
+              this.#deriveText(optionDefinition, 'text', optionName);
+              if (optionDefinition.DEFAULT) { numDefaultOption++ }
+            }
+            if (numDefaultOption !== 1) {
+              throw new JobProgramError('INVALID_DEFAULT_RADIO_OPTION');
+            }
+          }
         }
       }
     }
     this.#jobPrograms[name] = programDefinition;
-  }
-
-  static #checkPosition(position, objectName) {
-    if (!position) {
-      throw new JobProgramError('MISSING_POSITION', objectName);
-    } else {
-      if (isNaN(position)) {
-        throw new JobProgramError('POSITION_IS_NOT_NUMBER', objectName);
-      }
-    }
   }
 
   static #deriveText(object, textFieldName, defaultText) {
@@ -121,7 +141,7 @@ export default class JobProgram {
       object[textFieldName] = defaultText;
     }
     if (typeof object[textFieldName] === 'string') {
-      object[textFieldName]= {default: object[textFieldName]};
+      object[textFieldName]= {DEFAULT: object[textFieldName]};
     }
   }
 
@@ -157,10 +177,11 @@ export default class JobProgram {
   static getJobPrograms(nameFilter) {
     const jobPrograms = [];
     for (const [key, value] of Object.entries(this.#jobPrograms )) {
-      if (!nameFilter || key.toUpperCase().includes(nameFilter.toUpperCase())) {
+      if (!nameFilter || key.toUpperCase().includes(nameFilter.toUpperCase()) ||
+        value.description.DEFAULT.toUpperCase().includes(nameFilter.toUpperCase())) {
         jobPrograms.push({
           name: key,
-          description: value.description
+          description: value.description.DEFAULT
         });
       }
     }
@@ -174,10 +195,17 @@ export default class JobProgram {
   static checkParameters(name, parameters) {
     const jobDefinition = JobProgram.getJobProgramDefinition(name);
     if (!jobDefinition) {
-      throw new JobProgramError('MISSING_JOB_PROGRAM_NAME')
+      throw new JobProgramError('INVALID_JOB_PROGRAM')
+    }
+    const paramMap = {};
+    for (const groupValue of Object.values(jobDefinition.parameterDefinitions)) {
+      const parameters = groupValue.parameters;
+      for (const [paramName, paramDefinition] of Object.entries(parameters)) {
+        paramMap[paramName] = paramDefinition;
+      }
     }
     for (const [key, value] of Object.entries(parameters)) {
-      let paramDefinition = jobDefinition.parameterDefinitions[key];
+      let paramDefinition = paramMap[key];
       if (!paramDefinition) {
         throw new JobProgramError('INVALID_PARAMETER', key);
       }

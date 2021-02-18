@@ -19,6 +19,12 @@ export const msgArray = [
     }
   },
   { msgCat: "jobProgram",
+    msgName: "INVALID_JOB_PROGRAM",
+    msgText: {
+      EN: {shortText: "Job program %s is invalid", longText: "dummy"}
+    }
+  },
+  { msgCat: "jobProgram",
     msgName: "MISSING_JOB_CLASS_NAME",
     msgText: {
       EN: {shortText: "Job class(javascript class) is missing", longText: "dummy"}
@@ -31,27 +37,27 @@ export const msgArray = [
     }
   },
   { msgCat: "jobProgram",
-    msgName: "MISSING_GROUP_ASSIGNMENT",
+    msgName: "NO_PARAMETERS_IN_GROUP",
     msgText: {
-      EN: {shortText: "Parameter '%s' has not a group assigned", longText: "dummy"}
+      EN: {shortText: "There is no parameter in the group %s", longText: "dummy"}
     }
   },
   { msgCat: "jobProgram",
-    msgName: "INVALID_GROUP",
+    msgName: "INVALID_PARAMETER_TYPE",
     msgText: {
-      EN: {shortText: "Parameter '%s' is not assigned with a valid group", longText: "dummy"}
+      EN: {shortText: "%s is an invalid parameter type", longText: "dummy"}
     }
   },
   { msgCat: "jobProgram",
-    msgName: "MISSING_POSITION",
+    msgName: "INVALID_DEFAULT_RADIO_OPTION",
     msgText: {
-      EN: {shortText: "Position of %s is missing", longText: "dummy"}
+      EN: {shortText: "One and only one option should be default", longText: "dummy"}
     }
   },
   { msgCat: "jobProgram",
-    msgName: "POSITION_IS_NOT_NUMBER",
+    msgName: "DUPLICATE_JOB_PARAMETERS",
     msgText: {
-      EN: {shortText: "Position of %s is not numeric", longText: "dummy"}
+      EN: {shortText: "Parameter %s is duplicated", longText: "dummy"}
     }
   },
   { msgCat: "jobProgram",
@@ -218,6 +224,12 @@ export const msgArray = [
     msgName: "OCCURRENCE_IS_CANCELED",
     msgText: {
       EN: {shortText: "Occurrence %s of Job %s is canceled", longText: "dummy"}
+    }
+  },
+  { msgCat: "job",
+    msgName: "JOB_CANNOT_BE_CHANGED",
+    msgText: {
+      EN: {shortText: "Job in status %s cannot be changed", longText: "dummy"}
     }
   }
 ];

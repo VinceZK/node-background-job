@@ -1,6 +1,6 @@
 import JobProgram from '../server/jobProgram.js';
 
-describe('Job program super class tests', function () {
+describe.only('Job program super class tests', function () {
 
   before('Register a dummy job program', () => {
     JobProgram.registerJobProgram('testProgram', {className: 'TestProgram'});
@@ -41,116 +41,158 @@ describe('Job program super class tests', function () {
     });
     it('should success: register the job program with definition', () => {
       JobProgram.getJobProgramDefinition('testProgram')
-        .should.containEql({ className: 'TestProgram',
-                                  parameterGroups: {},
-                                  parameterDefinitions: {}  });
+        .should.containDeep({ className: 'TestProgram',
+                                   description: {DEFAULT: 'testProgram'},
+                                   parameterDefinitions: {}  });
       JobProgram.registerJobProgram('testProgram', {
         className: 'JobProgram',
         description: 'Super class of a job program'
       });
       JobProgram.getJobProgramDefinition('testProgram')
-        .should.containEql({ className: 'JobProgram',
-                                  description: { default: 'Super class of a job program' },
-                                  parameterGroups: {},
+        .should.containDeep({ className: 'JobProgram',
+                                  description: { DEFAULT: 'Super class of a job program' },
                                   parameterDefinitions: {} });
     });
-    it('should fail: group position is missing', () => {
+    it('should fail: NO_PARAMETERS_IN_GROUP', () => {
       try {
         JobProgram.registerJobProgram('testProgram2', {
-          className: 'JobProgram2',
+          className: 'JobProgram',
           description: { EN: 'description of job program' },
-          parameterGroups: { GROUP1: { text: 'text of group' }}
+          parameterDefinitions: { GROUP1: { text: 'text of group' }}
         });
         (1).should.eql(2);
       } catch (e) {
-        e.message.msgName.should.eql('MISSING_POSITION');
+        e.message.msgName.should.eql('NO_PARAMETERS_IN_GROUP');
       }
     });
-    it('should fail: group position is incorrect', () => {
+    it('should fail: INVALID_PARAMETER_TYPE', () => {
       try {
         JobProgram.registerJobProgram('testProgram2', {
-          className: 'JobProgram2',
+          className: 'JobProgram',
           description: { EN: 'description of job program' },
-          parameterGroups: { GROUP1: { position: 'a', text: 'text of group' }}
+          parameterDefinitions: {
+            GROUP1: {
+              text: 'text of group',
+              parameters: { PARAM1: {type: 99} }
+            }}
         });
         (1).should.eql(2);
       } catch (e) {
-        e.message.msgName.should.eql('POSITION_IS_NOT_NUMBER');
+        e.message.msgName.should.eql('INVALID_PARAMETER_TYPE');
       }
     });
-    it('should fail: parameter position is missing', () => {
+    it('should fail: INVALID_DEFAULT_RADIO_OPTION', () => {
       try {
         JobProgram.registerJobProgram('testProgram2', {
-          className: 'JobProgram2',
+          className: 'JobProgram',
           description: { EN: 'description of job program' },
-          parameterGroups: { GROUP1: { position: 1, text: 'text of group' }},
-          parameterDefinitions: { PARAM1: { text: 'Label1'}}
+          parameterDefinitions: {
+            GROUP1: {
+              text: 'text of group',
+              parameters: {
+                PARAM1: {
+                  type: 1,
+                  radioButtons: {
+                    option1: {DEFAULT: true},
+                    option2: {DEFAULT: true}
+                  }
+                }
+              }
+            }}
         });
         (1).should.eql(2);
       } catch (e) {
-        e.message.msgName.should.eql('MISSING_POSITION');
+        e.message.msgName.should.eql('INVALID_DEFAULT_RADIO_OPTION');
       }
     });
-    it('should fail: parameter position is incorrect', () => {
+    it('should fail: DUPLICATE_JOB_PARAMETERS', () => {
       try {
         JobProgram.registerJobProgram('testProgram2', {
-          className: 'JobProgram2',
+          className: 'JobProgram',
           description: { EN: 'description of job program' },
-          parameterGroups: { GROUP1: { position: 1, text: 'text of group' }},
-          parameterDefinitions: { PARAM1: { position: 'a', text: 'Label1' }}
+          parameterDefinitions: {
+            GROUP1: {
+              text: 'text of group1',
+              parameters: {
+                PARAM1: {type: 1}
+              }
+            },
+            GROUP2: {
+              text: 'text of group2',
+              parameters: {
+                PARAM1: {type: 1}
+              }
+            }
+          }
         });
         (1).should.eql(2);
       } catch (e) {
-        e.message.msgName.should.eql('POSITION_IS_NOT_NUMBER');
+        e.message.msgName.should.eql('DUPLICATE_JOB_PARAMETERS');
       }
     });
-    it('should fail: parameter misses group assignment', () => {
-      try {
-        JobProgram.registerJobProgram('testProgram2', {
-          className: 'JobProgram2',
-          description: { EN: 'description of job program' },
-          parameterGroups: { GROUP1: { position: 1, text: 'text of group' }},
-          parameterDefinitions: { PARAM1: { position: 1, text: 'Label1' }}
-        });
-        (1).should.eql(2);
-      } catch (e) {
-        e.message.msgName.should.eql('MISSING_GROUP_ASSIGNMENT');
-      }
-    });
-    it('should fail: parameter is assigned with an invalid group', () => {
-      try {
-        JobProgram.registerJobProgram('testProgram2', {
-          className: 'JobProgram2',
-          description: { EN: 'description of job program' },
-          parameterGroups: { GROUP1: { position: 1, text: 'text of group' }},
-          parameterDefinitions: { PARAM1: { position: 1, text: 'Label1', group: 'xxx' }}
-        })
-        (1).should.eql(2);
-      } catch (e) {
-        e.message.msgName.should.eql('INVALID_GROUP');
-      }
-    });
-    it('should success: register the job program with definition', () => {
+    it('should success: register the job program with complex definition', () => {
       JobProgram.registerJobProgram('testProgram2', {
-        className: 'JobProgram2',
-        description: { EN: 'description of job program' },
-        parameterGroups: {
-          GROUP1: { position: 1, text: 'text of group' },
-          GROUP2: { position: 2 }},
+        className: 'JobProgram',
+        description: 'description of job program',
         parameterDefinitions: {
-          PARAM1: { position: 1, text: {default: 'Label1'}, group: 'GROUP1', mandatory: true},
-          PARAM2: { position: 2, group: 'GROUP2'}}
+          GROUP1: {
+            text: 'text of group',
+            parameters: {
+              PARAM1: {
+                type: 1,
+                radioButtons: {
+                  option1: {DEFAULT: true},
+                  option2: {text: 'text of option2'}
+                }
+              },
+              PARAM2: {
+                dataElement: 'JOB_NAME',
+                text: {EN: 'text of param2'},
+                multiple: true,
+                mandatory: true,
+                hidden: false
+              }
+            }
+          },
+          GROUP2: {
+            text: { DEFAULT: 'text of group2'},
+            parameters: {
+              PARAM3: {}
+            }
+          },
+        }
       });
       JobProgram.getJobProgramDefinition('testProgram2')
         .should.containDeep({
-        className: 'JobProgram2',
-        description: { EN: 'description of job program' },
-        parameterGroups: {
-          GROUP1: { position: 1, text: { default: 'text of group'} },
-          GROUP2: { position: 2, text: { default: 'GROUP2'} }},
+        className: 'JobProgram',
+        description: { DEFAULT: 'description of job program'},
         parameterDefinitions: {
-          PARAM1: { position: 1, text: {default: 'Label1'}, group: 'GROUP1', mandatory: true},
-          PARAM2: { position: 2, text: {default: 'PARAM2'}, group: 'GROUP2'}}
+          GROUP1: {
+            text: {DEFAULT: 'text of group'},
+            parameters: {
+              PARAM1: {
+                type: 1,
+                radioButtons: {
+                  option1: {DEFAULT: true, text: {DEFAULT: 'option1'}},
+                  option2: {text: {DEFAULT: 'text of option2'}}
+                }
+              },
+              PARAM2: {
+                dataElement: 'JOB_NAME',
+                text: {EN: 'text of param2'},
+                multiple: true,
+                mandatory: true,
+                hidden: false
+              }
+            }
+          },
+          GROUP2: {
+            text: { DEFAULT: 'text of group2'},
+            parameters: {
+              PARAM3: {text: {DEFAULT: 'PARAM3'}}
+            }
+          },
+        }
       })
     });
     it('should fail: invalid parameter', () => {
@@ -163,7 +205,7 @@ describe('Job program super class tests', function () {
     });
     it('should fail: mandatory parameter value is missing', () => {
       try {
-        JobProgram.checkParameters('testProgram2', {PARAM1: '', PARAM2: 'PARAM2'});
+        JobProgram.checkParameters('testProgram2', {PARAM1: 'VALUE1', PARAM2: ''});
         (1).should.eql(2);
       } catch (e) {
         e.message.msgName.should.eql('MANDATORY_PARAMETER_VALUE_MISSING');
@@ -171,7 +213,7 @@ describe('Job program super class tests', function () {
     });
     it('should pass the check', () => {
       should(JobProgram.checkParameters(
-        'testProgram2', {PARAM1: 'PARAM1', PARAM2: 'PARAM2'})
+        'testProgram2', {PARAM1: 'VALUE1', PARAM2: 'VALUE2'})
       ).not.throw();
     });
   });

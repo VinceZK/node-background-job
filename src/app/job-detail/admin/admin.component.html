@@ -1,0 +1,26 @@
+<form class="mt-4 ml-2 row">
+  <dk-app-attribute-form2 class="col-md-6 col-lg-4 dk-form-label"
+                          [attributeControl]="getJobAttrCtrlFromID('createdBy')"
+                          [formGroup]="mainForm"
+                          [isSmallSize] = "true"
+                          [readonly]="true">
+  </dk-app-attribute-form2>
+  <dk-app-attribute-form2 class="col-md-6 col-lg-4 dk-form-label"
+                          [attributeControl]="getJobAttrCtrlFromID('createTime')"
+                          [formGroup]="mainForm"
+                          [isSmallSize] = "true"
+                          [readonly]="true">
+  </dk-app-attribute-form2>
+  <dk-app-attribute-form2 class="col-md-6 col-lg-4 dk-form-label"
+                          [attributeControl]="getJobAttrCtrlFromID('lastChangedBy')"
+                          [formGroup]="mainForm"
+                          [isSmallSize] = "true"
+                          [readonly]="true">
+  </dk-app-attribute-form2>
+  <dk-app-attribute-form2 class="col-md-6 col-lg-4 dk-form-label"
+                          [attributeControl]="getJobAttrCtrlFromID('lastChangeTime')"
+                          [formGroup]="mainForm"
+                          [isSmallSize] = "true"
+                          [readonly]="true">
+  </dk-app-attribute-form2>
+</form>

@@ -1,0 +1,18 @@
+<div class="container-fluid">
+  <form class="row">
+    <dk-app-attribute-form2 class="col-md-6 col-lg-4"
+                            [attributeControl]="getJobAttrCtrlFromID('mode')"
+                            [formGroup]="jobStartConditionFormGroup"
+                            [readonly]="readonly"
+                            [isSmallSize] = "true">
+    </dk-app-attribute-form2>
+    <dk-app-attribute-form2 class="col-md-6 col-lg-4"
+                            [ngStyle]="{'display': getSpecificTimeDisplay}"
+                            [attributeControl]="getJobAttrCtrlFromID('specificTime')"
+                            [formGroup]="jobStartConditionFormGroup"
+                            [readonly]="readonly"
+                            [isSmallSize] = "true">
+    </dk-app-attribute-form2>
+  </form>
+  <button (click)="onChangeMode()">change</button>
+</div>

@@ -1,0 +1,79 @@
+<div class="dk-job-step-main mx-3">
+  <div class="btn-toolbar justify-content-end" role="toolbar">
+    <button type="button" id="new" class="btn btn-light btn-sm" (click)="add()" [disabled]="readonly">
+      <span class="fas fa-plus"></span> Add</button>
+  </div>
+  <table *ngIf="jobStepFormArray" class="table table-bordered table-sm">
+    <thead class="thead-light">
+      <tr>
+        <th class="dk-name">Program</th>
+        <th class="dk-actions">Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+    <tr *ngFor="let stepForm of jobStepFormArray.controls; let i = index">
+      <td class="dk-program" [formGroup]="castFormGroup(stepForm)" >
+        <input type="text" formControlName="program" readonly class="form-control form-control-sm">
+      </td>
+      <td class="dk-actions">
+        <button class="btn btn-sm" type="button" id="delete" [disabled]="readonly" (click)="delete(i)" title="Delete">
+          <span class="far fa-trash-alt"></span>
+        </button>
+        <button class="btn btn-sm" type="button" id="up" [disabled]="readonly || i === 0" (click)="up(i)" title="Up">
+          <span class="fas fa-chevron-up"></span>
+        </button>
+        <button class="btn btn-sm" type="button" id="down" [disabled]="readonly || i === jobStepFormArray.length-1" (click)="down(i)" title="Down">
+          <span class="fas fa-chevron-down"></span>
+        </button>
+        <button class="btn btn-sm" type="button" id="adjust" (click)="adjust(i)" title="Adjust">
+          <span class="fas fa-sliders-h"></span>
+        </button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="addJobProgram" tabindex="-1" role="dialog"
+     [ngClass]="{'show': isAddProgramModalShown}"
+     [ngStyle]="{'display': displayAddProgramModal}">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addAuthObjectTitle">Add Program</h5>
+        <button type="button" class="close" (click)="close()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <dk-message></dk-message>
+        <div *ngIf="currentJobStep" class="input-group col-8" [formGroup]="currentJobStep">
+          <label for="newProgram" class="col-form-label form-control-sm">Program:</label>
+          <input id="newProgram" class="form-control form-control-sm" type="text" formControlName="program"
+                 [readOnly]="!isNewProgram" (change)="onChangeProgram()">
+          <div class="input-group-append">
+            <button class="btn btn-sm btn-outline-secondary btn-light" type="button" id="searchPermission"
+                    (click)="onSearchHelp()">
+              <span class="fas fa-search"></span>
+            </button>
+          </div>
+        </div>
+        <div class="col-4 ml-2">
+          <p>{{currentJobProgramDesc}}</p>
+        </div>
+        <div *ngIf="currentParamDefinitions" class="container-fluid dk-parameter-area">
+          <app-job-parameters [parameterDefinitions]="currentParamDefinitions"
+                              [currentJobStep]="currentJobStep"
+                              [readonly]="readonly">
+          </app-job-parameters>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" (click)="close()">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary" (click)="confirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+<dk-app-search-help></dk-app-search-help>

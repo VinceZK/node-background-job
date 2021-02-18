@@ -81,9 +81,9 @@
     <tbody>
     <tr *ngFor="let job of jobs">
       <td><a [routerLink]="['/jobs', job.name, {action: 'display'}]">{{job.name}}</a></td>
-      <td>{{job.description?.default}}</td>
-      <td>{{job.status}}</td>
-      <td>{{job.startCondition.mode}}</td>
+      <td>{{job.description?.DEFAULT}}</td>
+      <td>{{jobStatus(job.status)}}</td>
+      <td>{{jobMode(job.mode)}}</td>
       <td>{{job.finishedOccurrences}}</td>
       <td>{{job.failedOccurrences}}</td>
       <td>{{job.canceledOccurrences}}</td>

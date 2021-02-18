@@ -477,7 +477,7 @@
                 };
               }(this.entityService);
 
-              this.entitySearchHelp.BEHAVIOUR = 'M';
+              this.entitySearchHelp.BEHAVIOUR = 'A';
               this.entitySearchHelp.MULTI = false;
               this.entitySearchHelp.FUZZY_SEARCH = true;
               this.entitySearchHelp.FIELDS = [{
@@ -1168,7 +1168,7 @@
                 };
               }(this.entityService);
 
-              this.dataElementSearchHelp.BEHAVIOUR = 'M';
+              this.dataElementSearchHelp.BEHAVIOUR = 'A';
               this.dataElementSearchHelp.MULTI = false;
               this.dataElementSearchHelp.FUZZY_SEARCH = true;
               this.dataElementSearchHelp.FIELDS = [{
@@ -3931,7 +3931,7 @@
                 };
               }(this.entityService);
 
-              this.entitySearchHelp.BEHAVIOUR = 'M';
+              this.entitySearchHelp.BEHAVIOUR = 'A';
               this.entitySearchHelp.MULTI = false;
               this.entitySearchHelp.FUZZY_SEARCH = true;
               this.entitySearchHelp.FIELDS = [{
@@ -4807,6 +4807,8 @@
               this.relationshipForm.get('RELATIONSHIP_ID').setValidators(this._validateRelationshipID);
               this.relationshipForm.get('RELATIONSHIP_ID').setAsyncValidators(this.uniqueRelationshipValidator.validate.bind(this.uniqueRelationshipValidator));
               this.relationshipForm.get('TIME_DEPENDENT').enable();
+              this.relationshipForm.get('VALID_PERIOD').disable(); // TIME_DEPENDENT by default is not checked
+
               formArray.push(this.fb.group({
                 ROLE_ID: [''],
                 ROLE_DESC: [''],
@@ -4908,6 +4910,11 @@
               // In Display Mode -> Change Mode
               this.readonly = false;
               this.relationshipForm.get('TIME_DEPENDENT').enable();
+
+              if (!this.relationshipForm.get('TIME_DEPENDENT').value) {
+                this.relationshipForm.get('VALID_PERIOD').disable();
+              }
+
               this.relationshipForm.get('SINGLETON').enable();
               this.attrComponent.switchEditDisplay(this.readonly);
               this.involveFormArray.controls.forEach(function (involveFormGroup) {
@@ -5598,7 +5605,7 @@
                 };
               }(this.entityService);
 
-              this.searchHelpSearchHelp.BEHAVIOUR = 'M';
+              this.searchHelpSearchHelp.BEHAVIOUR = 'A';
               this.searchHelpSearchHelp.MULTI = false;
               this.searchHelpSearchHelp.FUZZY_SEARCH = true;
               this.searchHelpSearchHelp.FIELDS = [{
@@ -5706,6 +5713,8 @@
                 this.dataElementForm.get('DOMAIN_ID').disable();
                 this.dataElementForm.get('DATA_TYPE').disable();
                 this.dataElementForm.get('SEARCH_HELP_EXPORT_FIELD').disable();
+              } else {
+                this.dataElementForm.get('SEARCH_HELP_EXPORT_FIELD').enable();
               }
             } else {
               this.dataElementForm = this.fb.group({

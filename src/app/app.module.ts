@@ -1,14 +1,19 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { AppRoutingModule } from './app-routing.module';
+import {JorAngularModule} from 'jor-angular';
 import { AppComponent } from './app.component';
 import {HttpClientModule} from '@angular/common/http';
 import { JobListComponent } from './job-list/job-list.component';
 import { JobDetailComponent } from './job-detail/job-detail.component';
-import {FormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {RouteReuseStrategy, RouterModule, Routes} from '@angular/router';
 import {CustomReuseStrategy} from './custom.reuse.strategy';
 import {MessageModule} from 'ui-message-angular';
+import { JobStepsComponent } from './job-detail/job-steps/job-steps.component';
+import { JobStartConditionComponent } from './job-detail/job-start-condition/job-start-condition.component';
+import { JobOccurrencesComponent } from './job-detail/job-occurrences/job-occurrences.component';
+import { AdminComponent } from './job-detail/admin/admin.component';
+import { JobParametersComponent } from './job-detail/job-parameters/job-parameters.component';
 
 const appRoutes: Routes = [
   // {
@@ -19,6 +24,7 @@ const appRoutes: Routes = [
   //   }
   // },
   { path: 'jobs', component: JobListComponent },
+  { path: 'jobs/:name', component: JobDetailComponent },
   { path: '**', redirectTo: 'jobs', pathMatch: 'full'}
 ];
 
@@ -26,15 +32,22 @@ const appRoutes: Routes = [
   declarations: [
     AppComponent,
     JobListComponent,
-    JobDetailComponent
+    JobDetailComponent,
+    JobStepsComponent,
+    JobStartConditionComponent,
+    JobOccurrencesComponent,
+    AdminComponent,
+    JobParametersComponent
   ],
   imports: [
     HttpClientModule,
     BrowserModule,
     // AppRoutingModule,
     MessageModule,
+    JorAngularModule,
     RouterModule.forRoot(appRoutes),
-    FormsModule
+    FormsModule,
+    ReactiveFormsModule
   ],
   providers: [
     {provide: RouteReuseStrategy, useClass: CustomReuseStrategy}

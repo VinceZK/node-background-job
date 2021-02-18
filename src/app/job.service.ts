@@ -27,12 +27,17 @@ export class JobService {
     return formatDate( new Date(), 'yyyy-MM-dd hh:mm:ss', 'en-US' );
   }
 
-  createJob(jobDefinition: Job): Observable<Message> {
-    return this.http.post<Message>(this.originalHost + `/api/jobs`, jobDefinition, httpOptions).pipe(
-      catchError(this.handleError<any>('createJob')));
+  saveJob(isNew: boolean, jobDefinition: Job): Observable<Message[]> {
+    if (isNew) {
+      return this.http.post<Message[]>(this.originalHost + `/api/jobs`, jobDefinition, httpOptions).pipe(
+        catchError(this.handleError<any>('createJob')));
+    } else {
+      return this.http.put<Message[]>(this.originalHost + `/api/jobs`, jobDefinition, httpOptions).pipe(
+        catchError(this.handleError<any>('changeJob')));
+    }
   }
 
-  getJob(jobName: string): Observable<Job | Message> {
+  getJob(jobName: string | null): Observable<Job | Message> {
     return this.http.get<Job | Message>(this.originalHost + `/api/jobs/${jobName}`, httpOptions).pipe(
       catchError(this.handleError<any>('getJob')));
   }

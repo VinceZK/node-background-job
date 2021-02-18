@@ -1,5 +1,5 @@
 ### Get job programs
-GET http://localhost:3000/api/jobPrograms?
+GET http://localhost:3000/api/jobPrograms?filter=test
 Accept: */*
 Cache-Control: no-cache
 Content-Type: application/json
@@ -11,13 +11,13 @@ Cache-Control: no-cache
 Content-Type: application/json
 
 ### Get job with a filter
-GET http://localhost:3000/api/jobs?mode=0&mode=1&mode=2
+GET http://localhost:3000/api/jobs
 Accept: */*
 Cache-Control: no-cache
 Content-Type: application/json
 
 ### Get job
-GET http://localhost:3000/api/jobs/testSpecTimeJob
+GET http://localhost:3000/api/jobs/testSpecTimeJob1
 Accept: */*
 Cache-Control: no-cache
 Content-Type: application/json
@@ -29,12 +29,26 @@ Cache-Control: no-cache
 Content-Type: application/json
 
 {
-  "name": "testSpecTimeJob1",
+  "name": "testSpecTimeJob2",
   "description": "specific time job",
+  "identity": {
+    "id": "DH001"
+  },
   "steps": [
-    { "program": "testJobProgram", "parameters": {"param1": "value2"}}
+    {
+      "program": "testJobProgram",
+      "parameters": {
+        "param1": "value1"
+      }
+    }
   ],
-  "startCondition": { "mode": 1, "specificTime":  "2021/02/30 12:00:00" }
+  "startCondition": {
+    "mode": 1,
+    "specificTime": "2021/02/20 12:00:00"
+  },
+  "outputSetting": {
+    "console2ApplicationLog": true
+  }
 }
 
 ### Schedule a job

@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import Job from "./job.js";
 import {OccurrenceStatusEnum} from "./constants.js";
 import ApplicationLog from "./applicationLog.js";
+import * as jor from "json-on-relations";
 
 export default class JobOccurrence {
   static #occurrences = [];
@@ -15,6 +16,45 @@ export default class JobOccurrence {
       return (!filter.uuid || filter.uuid === occurrence.uuid) &&
         (!filter.jobName || filter.jobName === occurrence.jobName) &&
         (!filter.status || filter.status.includes(occurrence.status));
+    });
+  }
+  static getOccurrencesDB(filter) {
+    let queryObject = {ENTITY_ID: 'jobOccurrence', RELATION_ID: 'jobOccurrence'};
+    queryObject.PROJECTION = [
+      'uuid', 'jobName', 'scheduledDateTime', 'actualStartDateTime', 'endDateTime'
+    ];
+    queryObject.FILTER = [];
+    if (filter && filter.uuid) {
+      queryObject.FILTER.push({
+        FIELD_NAME: 'uuid',
+        OPERATOR: 'EQ',
+        LOW: filter.uuid
+      });
+    }
+    if (filter && filter.jobName) {
+      queryObject.FILTER.push({
+        FIELD_NAME: 'jobName',
+        OPERATOR: 'EQ',
+        LOW: filter.jobName
+      });
+    }
+    if (filter && filter.status) {
+      filter.status.forEach( status => {
+        queryObject.FILTER.push({
+          FIELD_NAME: 'status',
+          OPERATOR: 'EQ',
+          LOW: status
+        });
+      });
+    }
+    return new Promise((resolve, reject) => {
+      jor.Query.run(queryObject, async (errs, rows) => {
+        if (errs) {
+          reject(errs);
+        } else {
+          resolve(rows);
+        }
+      });
     });
   }
   static getLastScheduledOccurrence(jobName) {
@@ -85,30 +125,113 @@ export default class JobOccurrence {
     JobOccurrence.#occurrences.push(this.entry);
   }
 
-  #updateStatus(status) {
+  async persistJobOccurrence() {
+    const occInstance = {ENTITY_ID: 'jobOccurrence'};
+    occInstance.jobOccurrence = [
+      { jobName: this.entry.jobName, status: this.entry.status,
+        scheduledDateTime: this.entry.scheduledDateTime.toISOString().slice(0, 19).replace('T', ' '),
+        actualStartDateTime: null,
+        endDateTime: null
+      }];
+    if (this.identity) {
+      occInstance.r_job_identity = [{...this.identity}];
+      occInstance.r_job_identity[0].key = uuid();
+    }
+    occInstance.r_job_occurrence_step = this.entry.steps.map( (step, index) => {
+      return { uuid: this.entry.uuid, sequence: index+1, program: step.program,
+        parameters: JSON.stringify(step.parameters), status: OccurrenceStatusEnum.initial, output:null }
+    });
+    occInstance.r_start_condition = [
+      { key: uuid(), mode: this.entry.startCondition.mode,
+        cronString: this.entry.startCondition.cronString ,
+        cronCurrentDate: this.entry.startCondition.cronOption? this.entry.startCondition.cronOption.currentDate : null,
+        cronEndDate: this.entry.startCondition.cronOption? this.entry.startCondition.cronOption.endDate : null}
+    ];
+    if (this.entry.startCondition.specificTime) {
+      occInstance.r_start_condition[0].specificTime =
+        this.entry.startCondition.specificTime.slice(0, 19).replace('T', ' ');
+    }
+    if (this.entry.startCondition.cronOption && this.entry.startCondition.cronOption.tz) {
+      occInstance.r_start_condition[0].tz = this.entry.startCondition.cronOption.tz;
+    }
+    if (this.outputSetting) {
+      occInstance.r_output_setting = [{ ...this.outputSetting }];
+      occInstance.r_output_setting[0].key = uuid();
+    }
+    occInstance.relationships =  [{
+      RELATIONSHIP_ID: 'rs_job_occurrence',
+      values:[
+        { action: 'add', scheduledDateTime: occInstance.jobOccurrence[0].scheduledDateTime,
+          PARTNER_INSTANCES: [{
+          ENTITY_ID:'job', ROLE_ID:'background_job', INSTANCE_GUID: Job.getJob(this.jobName).instance.INSTANCE_GUID}]
+        }]
+    }];
+    return new Promise( (resolve, reject) => {
+      jor.Entity.createInstance(occInstance, (errors, results) => {
+        if (errors) {
+          // Remove the cached entry since the persistent is failed
+          const index = JobOccurrence.#occurrences.findIndex( occ => occ.uuid === this.uuid);
+          JobOccurrence.#occurrences.splice(index, 1);
+          reject(errors);
+        } else {
+          this.INSTANCE_GUID = results.INSTANCE_GUID;
+          resolve(results);
+        }
+      });
+    });
+  }
+
+  async #updateStatus(status) {
     if (status > this.entry.status && this.entry.status < OccurrenceStatusEnum.finished) {
       if (status === OccurrenceStatusEnum.cancel && this.entry.status !== OccurrenceStatusEnum.ready) {
         // You can only cancel job occurrence with status 'Ready'
         throw new JobError('INCORRECT_JOB_OCCURRENCE_STATUS_CHANGE', this.entry.status, status);
-      } else {
-        this.entry.status = status;
       }
     } else {
       throw new JobError('INCORRECT_JOB_OCCURRENCE_STATUS_CHANGE', this.entry.status, status);
     }
+
+    let now = new Date();
+    if (process.env.USE_DB === 'true') {
+      let changeInstance = {
+        ENTITY_ID: 'jobOccurrence', INSTANCE_GUID: this.INSTANCE_GUID,
+        job: { action: 'change', status: status }
+      };
+      if (status === OccurrenceStatusEnum.running) {
+        changeInstance.job.actualStartDateTime = now.toISOString().slice(0, 19).replace('T', ' ');
+      }
+      if (status >= OccurrenceStatusEnum.finished) {
+        changeInstance.job.endDateTime = now.toISOString().slice(0, 19).replace('T', ' ');
+      }
+      return new Promise((resolve, reject) => {
+        jor.Entity.changeInstance(changeInstance, async (errors) => {
+          if (errors) { reject(errors); }
+          else {
+            await this.#updateStatusInCache(status, now);
+            resolve(0);
+          }
+        });
+      });
+    } else {
+      this.#updateStatusInCache(status, now);
+    }
+  }
+
+  async #updateStatusInCache(status, now) {
+    this.entry.status = status;
     if (status === OccurrenceStatusEnum.running) {
-      this.entry.actualStartDateTime = new Date();
+      this.entry.actualStartDateTime = now;
     }
     if (status >= OccurrenceStatusEnum.finished) {
-      this.entry.endDateTime = new Date();
       const job = Job.getJob(this.jobName).instance;
-      job.updateStatistics(status, this.scheduledDateTime);
+      await job.updateStatistics(status, this.scheduledDateTime);
+      this.entry.endDateTime = now;
       this.entry.instance = null;
     }
   }
 
-  #setReady() {
-    this.#updateStatus(OccurrenceStatusEnum.ready);
+  async #setReady() {
+    await this.#updateStatus(OccurrenceStatusEnum.ready);
     let now = Date.now();
     let then = this.scheduledDateTime.getTime();
     return setTimeout(() => {
@@ -119,7 +242,7 @@ export default class JobOccurrence {
   }
 
   async #runSteps(applicationLog) {
-    this.#updateStatus(OccurrenceStatusEnum.running);
+    await this.#updateStatus(OccurrenceStatusEnum.running);
     if (this.outputSetting.console2ApplicationLog) {
       this.#setConsole2ApplicationLog();
     }
@@ -135,11 +258,11 @@ export default class JobOccurrence {
         step.status = OccurrenceStatusEnum.finished;
       } catch (e) {
         step.status = OccurrenceStatusEnum.failed;
-        this.#updateStatus(OccurrenceStatusEnum.failed);
+        await this.#updateStatus(OccurrenceStatusEnum.failed);
         throw e;
       }
     }
-    this.#updateStatus(OccurrenceStatusEnum.finished);
+    await this.#updateStatus(OccurrenceStatusEnum.finished);
     if (this.outputSetting.console2ApplicationLog) {
       this.#restoreConsoleFromApplicationLog();
     }
@@ -162,8 +285,8 @@ export default class JobOccurrence {
 
   }
 
-  cancel() {
-    this.#updateStatus(OccurrenceStatusEnum.canceled);
-    clearTimeout(this.timerHandler);
+  async cancel() {
+    await this.#updateStatus(OccurrenceStatusEnum.canceled);
+    clearTimeout(await this.timerHandler);
   }
 }

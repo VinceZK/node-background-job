@@ -250,7 +250,7 @@ describe('Job Class tests',  () => {
           ],
           startCondition: { mode: 0 }
         });
-        job.scheduleOccurrences();
+        await job.scheduleOccurrences();
       } catch (e) {
         console.error(e.message);
       }
@@ -276,7 +276,7 @@ describe('Job Class tests',  () => {
         }, 1100);
       })
     });
-    it('should run 2 parallel jobs with console2ApplicationLob active', () => {
+    it('should run 2 parallel jobs with console2ApplicationLob active', async () => {
       try {
         let job1 = new Job({
           name: 'testImmediateJob1',
@@ -296,8 +296,8 @@ describe('Job Class tests',  () => {
           startCondition: { mode: 0 },
           outputSetting: { console2ApplicationLog: true }
         });
-        job1.scheduleOccurrences();
-        job2.scheduleOccurrences();
+        await job1.scheduleOccurrences();
+        await job2.scheduleOccurrences();
       } catch (e) {
         console.error(e.message);
       }
@@ -324,7 +324,7 @@ describe('Job Class tests',  () => {
   });
 
   describe('Schedule specific time job run', () => {
-    it('should not schedule the job as the start data is in future', () => {
+    it('should not schedule the job as the start data is in future', async () => {
       let now = new Date();
       let jobStart = new Date();
       let occEnd = new Date();
@@ -340,7 +340,7 @@ describe('Job Class tests',  () => {
           ],
           startCondition: { mode: 1, specificTime: jobStart.toString()}
         });
-        job.scheduleOccurrences(now, occEnd);
+        await job.scheduleOccurrences(now, occEnd);
       } catch (e) {
         console.error(e.message);
       }
@@ -358,7 +358,7 @@ describe('Job Class tests',  () => {
         }, 2100);
       })
     });
-    it('should schedule the job after 2 seconds', () => {
+    it('should schedule the job after 2 seconds', async () => {
       let now = new Date();
       let occStart = new Date();
       let occEnd = new Date();
@@ -366,7 +366,7 @@ describe('Job Class tests',  () => {
       occEnd.setSeconds(now.getSeconds() + 2);
       try{
         const job  = Job.getJob('testSpecTimeJob').instance;
-        job.scheduleOccurrences(occStart, occEnd);
+        await job.scheduleOccurrences(occStart, occEnd);
       } catch (e) {
         console.error(e.message);
       }
@@ -458,7 +458,7 @@ describe('Job Class tests',  () => {
       cronOption.currentDate.should.eql(jobDefinition.startCondition.cronOption.currentDate);
       (cronOption.endDate - max).should.within(0, 100);
     });
-    it('should fail: end date is before the last scheduled occurrence', () => {
+    it('should fail: end date is before the last scheduled occurrence', async () => {
       let now = new Date();
       jobDefinition.name = 'testRecurrentJob4';
       jobDefinition.startCondition.cronString = '*/3 * * * * *'; // every 3 seconds
@@ -467,15 +467,17 @@ describe('Job Class tests',  () => {
       jobDefinition.startCondition.cronOption.endDate.setSeconds(now.getSeconds() + 4);
       try {
         const job = new Job(jobDefinition);
-        job.scheduleOccurrences();
+        await job.scheduleOccurrences();
         const occurrences = JobOccurrence.getOccurrences({jobName: 'testRecurrentJob4'});
-        occurrences.forEach(occurrence => occurrence.instance.cancel());
-        // console.table(occurrences);
+        for (const occurrence of occurrences) {
+          await occurrence.instance.cancel()
+        }
         let end = new Date();
         end.setSeconds(now.getSeconds() + 1);
         job.generateCronOption(end);
         (1).should.eql(2);
       } catch (e) {
+        console.log(e.message);
         e.message.msgName.should.eql('END_DATE_BEFORE_CURRENT_DATE');
       }
     });
@@ -493,8 +495,8 @@ describe('Job Class tests',  () => {
         let end2 = new Date();
         start.setSeconds(now.getSeconds() + 2);
         end2.setSeconds(now.getSeconds() + 6);
-        job.scheduleOccurrences(start, end2);
-        job.scheduleOccurrences(end2);
+        await job.scheduleOccurrences(start, end2);
+        await job.scheduleOccurrences(end2);
       } catch (e) {
         console.log(e.message);
       }

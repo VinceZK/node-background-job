@@ -1,1 +1,70 @@
-<p>job-detail works!</p>
+<nav class="navbar dk-fixed-top navbar-light bg-light">
+  <div>
+    <span class="font-weight-bold mb-0 mx-1">{{isNewMode? 'New Job' : readonly? 'Display Job' : 'Change Job'}}</span>
+  </div>
+
+  <div class="flex-row-reverse">
+    <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Edit/Display" id="editDisplay" (click)="switchEditDisplay()">
+      <span *ngIf="readonly" class="fas fa-edit"> Edit</span>
+      <span *ngIf="!readonly" class="fas fa-glasses"> Display</span>
+    </button>
+    <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Save" id="save" (click)="save()" [disabled]="readonly">
+      <span class="fas fa-save"> Save</span>
+    </button>
+  </div>
+</nav>
+
+<div class="mt-2 mb-2">
+  <dk-message></dk-message>
+</div>
+
+<div *ngIf="mainForm" class="ml-2">
+  <div class="mt-2 ml-1 row">
+    <dk-app-attribute-form2 class="col-md-6 col-lg-4"
+                            [attributeControl]="getJobAttrCtrlFromID('name')"
+                            [formGroup]="mainForm"
+                            [readonly]="!isNewMode"
+                            [isSmallSize] = "true">
+    </dk-app-attribute-form2>
+    <div class="form-group col-md-6 col-lg-4" [formGroup]="textForm">
+      <label for="description" class="col-form-label form-control-sm">Description:
+      </label>
+      <textarea class="form-control" id="description" name="description" rows="2"
+                formControlName="DEFAULT" [readonly]="readonly"></textarea>
+    </div>
+    <dk-app-attribute-form2 class="col-md-6 col-lg-4"
+                            [attributeControl]="getJobAttrCtrlFromID('status')"
+                            [formGroup]="mainForm"
+                            [readonly]="true"
+                            [isSmallSize] = "true">
+    </dk-app-attribute-form2>
+<!--    <dk-app-attribute-form2 class="col-md-6 col-lg-4"-->
+<!--                            [attributeControl]="getJobAttrCtrlFromID('mode')"-->
+<!--                            [formGroup]="mainForm"-->
+<!--                            [readonly]="readonly"-->
+<!--                            [isSmallSize] = "true">-->
+<!--    </dk-app-attribute-form2>-->
+  </div>
+
+  <ul class="nav nav-tabs mt-1">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="tabStrip===1" href="javascript:void(0);" (click)="switchTabStrip(1)">Steps</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="tabStrip===2" href="javascript:void(0);" (click)="switchTabStrip(2)">Start Condition</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="tabStrip===3" href="javascript:void(0);" (click)="switchTabStrip(3)">Occurrence</a>
+    </li>
+    <li class="nav-item" *ngIf="mainForm.get('createdBy')">
+      <a class="nav-link" [class.active]="tabStrip===4" href="javascript:void(0);" (click)="switchTabStrip(4)">Admin</a>
+    </li>
+  </ul>
+
+  <div class="mt-2" [ngSwitch]="tabStrip">
+    <app-job-steps *ngSwitchCase="1" [mainForm]="mainForm" [readonly]="readonly"></app-job-steps>
+    <app-job-start-condition *ngSwitchCase="2" [mainForm]="mainForm" [relationMetas]="relationMetas" [readonly]="readonly"></app-job-start-condition>
+    <app-job-occurrences *ngSwitchCase="3" [mainForm]="mainForm" [readonly]="readonly"></app-job-occurrences>
+    <app-admin *ngSwitchCase="4" [mainForm]="mainForm" [relationMetas]="relationMetas"></app-admin>
+  </div>
+</div>
