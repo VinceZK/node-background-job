@@ -13,7 +13,6 @@ export class JobStartConditionComponent implements OnInit {
   @Input() relationMetas!: RelationMeta[];
   jobStartConditionFormGroup!: FormGroup;
   private attrCtrls!: AttributeBase[];
-  currentMode = 0;
 
   get getSpecificTimeDisplay(): string {
     return this.jobStartConditionFormGroup.get('mode')?.value === 1 ? 'block' : 'none';
@@ -34,10 +33,11 @@ export class JobStartConditionComponent implements OnInit {
   }
 
   onChangeMode(): void {
-    this.currentMode++;
-    if (this.currentMode === 4) {
-      this.currentMode = 0;
-    }
-    this.jobStartConditionFormGroup.get('mode')?.setValue(this.currentMode);
+    // this.currentMode++;
+    // if (this.currentMode === 4) {
+    //   this.currentMode = 0;
+    // }
+    // this.jobStartConditionFormGroup.get('mode')?.setValue(this.currentMode);
+    // console.log(this.jobStartConditionFormGroup.get('mode')?.value);
   }
 }

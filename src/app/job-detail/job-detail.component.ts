@@ -32,7 +32,7 @@ export class JobDetailComponent implements OnInit {
   action!: string | null;
   originalValue!: Job;
   changedValue!: Job;
-  tabStrip = 1;
+  tabStrip = 2;
 
   constructor(private fb: FormBuilder,
               private route: ActivatedRoute,

@@ -1,0 +1,11 @@
+.ng-invalid.dk-invalid-feedback,
+.ng-invalid + .dk-invalid-feedback{
+  display: inline;
+}
+.dk-invalid-feedback {
+  display: none;
+  width: 100%;
+  margin-top: .25rem;
+  /*font-size: 100%;*/
+  color: #dc3545;
+}
