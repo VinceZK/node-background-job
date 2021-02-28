@@ -99,7 +99,7 @@ export class JobStepsComponent implements OnInit {
       this.messageService.reportMessage('JOB', 'INVALID_OR_MISSING_JOB_PROGRAM', 'E');
       return;
     }
-    this.jobParametersComponent.generateParamValues();
+    if (!this.jobParametersComponent.generateParamValues()) { return; }
     if (this.isNewProgram) {
       this.jobStepFormArray.push(this.currentJobStep);
     }

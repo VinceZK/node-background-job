@@ -44,7 +44,7 @@
         <div class="col-sm-6">
           <input id="seconds" name="seconds" type="text" class="form-control"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
-                 [(ngModel)]="cronArrayAt[0]" #seconds="ngModel"
+                 [(ngModel)]="cronArrayAt[0]" #seconds="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(0)" (keydown)="onKeydown($event)"
                  placeholder="0,1,2,... or 1-59 or *">
         </div>
@@ -59,7 +59,7 @@
         <label for="everySecond" class="col-sm-1 col-form-label">Every(/):</label>
         <div class="col-sm-2">
           <input id="everySecond" name="everySecond" type="number" class="form-control"
-                 [(ngModel)]="cronArrayEvery[0]" (keyup)="onKeyup(0)">
+                 [readOnly]="readonly" [(ngModel)]="cronArrayEvery[0]" (keyup)="onKeyup(0)">
         </div>
         <label for="everySecond" class="col-sm-1 col-form-label">seconds</label>
         <div class="col-sm-1"></div>
@@ -109,7 +109,7 @@
         <div class="col-sm-6">
           <input id="minutes" name="minutes" type="text" class="form-control"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
-                 [(ngModel)]="cronArrayAt[1]" #minutes="ngModel"
+                 [(ngModel)]="cronArrayAt[1]" #minutes="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(1)" (keydown)="onKeydown($event)"
                  placeholder="0,1,2,... or 1-20 or *">
         </div>
@@ -124,7 +124,7 @@
         <label for="everyMinute" class="col-sm-1 col-form-label">Every(/):</label>
         <div class="col-sm-2">
           <input id="everyMinute" name="everyMinute" type="number" class="form-control"
-                 [(ngModel)]="cronArrayEvery[1]" (keyup)="onKeyup(1)">
+                 [readOnly]="readonly" [(ngModel)]="cronArrayEvery[1]" (keyup)="onKeyup(1)">
         </div>
         <label for="everySecond" class="col-sm-1 col-form-label">minutes</label>
         <div class="col-sm-1"></div>
@@ -174,7 +174,7 @@
         <div class="col-sm-6">
           <input id="hours" name="hours" type="text" class="form-control"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
-                 [(ngModel)]="cronArrayAt[2]" #hours="ngModel"
+                 [(ngModel)]="cronArrayAt[2]" #hours="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(2)" (keydown)="onKeydown($event)"
                  placeholder="0,1,2,... or 0-23 or *">
         </div>
@@ -189,7 +189,7 @@
         <label for="everyMinute" class="col-sm-1 col-form-label">Every(/):</label>
         <div class="col-sm-2">
           <input id="everyHour" name="everyHour" type="number" class="form-control"
-                 [(ngModel)]="cronArrayEvery[2]" (keyup)="onKeyup(2)">
+                 [readOnly]="readonly" [(ngModel)]="cronArrayEvery[2]" (keyup)="onKeyup(2)">
         </div>
         <label for="everyHour" class="col-sm-1 col-form-label">hours</label>
         <div class="col-sm-1"></div>
@@ -237,7 +237,7 @@
         <div class="col-sm-6">
           <input id="dayOfMonth" name="dayOfMonth" type="text" class="form-control"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
-                 [(ngModel)]="cronArrayAt[3]" #dayOfMonth="ngModel"
+                 [(ngModel)]="cronArrayAt[3]" #dayOfMonth="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(3)" (keydown)="onKeydown($event)"
                  placeholder="1,2,3,... or 1-31 or *">
         </div>
@@ -252,7 +252,7 @@
         <label for="everyDay" class="col-sm-1 col-form-label">Every(/):</label>
         <div class="col-sm-2">
           <input id="everyDay" name="everyDay" type="number" class="form-control"
-                 [(ngModel)]="cronArrayEvery[3]" (keyup)="onKeyup(3)">
+                 [readOnly]="readonly" [(ngModel)]="cronArrayEvery[3]" (keyup)="onKeyup(3)">
         </div>
         <label for="everyDay" class="col-sm-1 col-form-label">days</label>
         <div class="col-sm-1"></div>
@@ -300,7 +300,7 @@
         <div class="col-sm-6">
           <input id="month" name="month" type="text" class="form-control"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
-                 [(ngModel)]="cronArrayAt[4]" #month="ngModel"
+                 [(ngModel)]="cronArrayAt[4]" #month="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(4)" (keydown)="onKeydown($event)"
                  placeholder="1,2,3,... or 1-12 or *">
         </div>
@@ -315,7 +315,7 @@
         <label for="everyMonth" class="col-sm-1 col-form-label">Every(/):</label>
         <div class="col-sm-2">
           <input id="everyMonth" name="everyMonth" type="number" class="form-control"
-                 [(ngModel)]="cronArrayEvery[4]" (keyup)="onKeyup(4)">
+                 [readOnly]="readonly" [(ngModel)]="cronArrayEvery[4]" (keyup)="onKeyup(4)">
         </div>
         <label for="everyMonth" class="col-sm-1 col-form-label">month</label>
         <div class="col-sm-1"></div>
@@ -368,7 +368,7 @@
         <div class="col-sm-6">
           <input id="dayOfWeek" name="dayOfWeek" type="text" class="form-control"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
-                 [(ngModel)]="cronArrayAt[5]" #dayOfWeek="ngModel"
+                 [(ngModel)]="cronArrayAt[5]" #dayOfWeek="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(5)" (keydown)="onKeydown($event)"
                  placeholder="0,1,2,... or 0-6 or *">
         </div>
@@ -383,7 +383,7 @@
         <label for="everyDayOfWeek" class="col-sm-1 col-form-label">Every(/):</label>
         <div class="col-sm-2">
           <input id="everyDayOfWeek" name="everyDayOfWeek" type="number" class="form-control"
-                 [(ngModel)]="cronArrayEvery[5]" (keyup)="onKeyup(5)">
+                 [readOnly]="readonly" [(ngModel)]="cronArrayEvery[5]" (keyup)="onKeyup(5)">
         </div>
         <label for="everyDayOfWeek" class="col-sm-1 col-form-label">days</label>
         <div class="col-sm-1"></div>
@@ -437,19 +437,21 @@
         <div class="form-group row col-6">
           <label for="startFrom" class="col-sm-3 col-form-label">Start:</label>
           <div class="col-sm-6">
-            <input id="startFrom" name="startFrom" type="datetime-local" class="form-control" [(ngModel)]="cronCurrentDate">
+            <input id="startFrom" name="startFrom" type="datetime-local" class="form-control"
+                   [readOnly]="readonly" [(date)]="cronCurrentDate" (dateChange)="onChangeCurrentDate($event)">
           </div>
         </div>
         <div class="form-group row col-6">
           <label for="endAt" class="col-sm-3 col-form-label">End:</label>
           <div class="col-sm-6">
-            <input id="endAt" name="endAt" type="datetime-local" class="form-control" [(ngModel)]="cronEndDate">
+            <input id="endAt" name="endAt" type="datetime-local" class="form-control"
+                   [readOnly]="readonly" [(date)]="cronEndDate" (dateChange)="onChangeEndDate($event)">
           </div>
         </div>
         <div class="form-group row col-6">
           <label for="tz" class="col-sm-3 col-form-label">Timezone:</label>
           <div class="col-sm-6">
-            <input id="tz" name="tz" type="text" class="form-control" [(ngModel)]="tz">
+            <input id="tz" name="tz" type="text" class="form-control" [(ngModel)]="tz" [readOnly]="readonly">
           </div>
         </div>
       </div>

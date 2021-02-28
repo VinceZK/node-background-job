@@ -86,6 +86,10 @@ export default class JobCtrl{
         finishedOccurrences: jobEntry.finishedOccurrences,
         failedOccurrences: jobEntry.failedOccurrences,
         canceledOccurrences: jobEntry.canceledOccurrences,
+        createdBy: jobEntry.createdBy,
+        createTime: jobEntry.createTime,
+        lastChangedBy: jobEntry.lastChangedBy,
+        lastChangeTime: jobEntry.lastChangeTime
       });
     }
   }

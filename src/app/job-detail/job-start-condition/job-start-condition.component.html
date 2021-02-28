@@ -1,35 +1,39 @@
 <div class="container-fluid" [formGroup]="jobStartConditionFormGroup">
   <div class="mb-2">
     <div class="form-check form-check-inline">
-      <input class="form-check-input" type="radio" name="mode" id="Immediately" [value]="0" formControlName="mode">
-      <label class="form-check-label" for="Immediately">Immediately</label>
+      <input class="form-check-input" type="radio" name="mode" id="ImmediatelyMode" [value]="0"
+             formControlName="mode" (change)="onChangeMode()">
+      <label class="form-check-label" for="ImmediatelyMode">Immediately</label>
     </div>
     <div class="form-check form-check-inline">
-      <input class="form-check-input" type="radio" name="mode" id="SpecificTime" [value]="1" formControlName="mode">
-      <label class="form-check-label" for="SpecificTime">At Specific Time</label>
+      <input class="form-check-input" type="radio" name="mode" id="SpecificTimeMode" [value]="1"
+             formControlName="mode" (change)="onChangeMode()">
+      <label class="form-check-label" for="SpecificTimeMode">At Specific Time</label>
     </div>
     <div class="form-check form-check-inline">
-      <input class="form-check-input" type="radio" name="mode" id="Recursively" [value]="2" formControlName="mode">
-      <label class="form-check-label" for="Recursively">Recursively</label>
+      <input class="form-check-input" type="radio" name="mode" id="RecursivelyMode" [value]="2"
+             formControlName="mode" (change)="onChangeMode()">
+      <label class="form-check-label" for="RecursivelyMode">Recursively</label>
     </div>
-    <!--  <div class="form-check form-check-inline">-->
-    <!--    <input class="form-check-input" type="radio" name="mode" id="Event" [value]="3" formControlName="mode">-->
-    <!--    <label class="form-check-label" for="Event">On Event</label>-->
-    <!--  </div>-->
   </div>
 
   <div class="mt-2" [ngSwitch]="jobStartConditionFormGroup.get('mode')?.value">
-    <div class="card" *ngSwitchCase="2">
-      <div class="card-header">At Time</div>
+    <div class="card" *ngSwitchCase="1">
+      <div class="card-header">Job will start at the given datetime</div>
       <div class="card-body">
-        <input type="datetime-local">
+        <div class="form-group row col-6">
+          <div>
+            <input id="startFrom" name="startFrom" type="datetime-local" class="form-control"
+                   [readOnly]="readonly" [(date)]="specificTime" (dateChange)="onChangeSpecificDate($event)">
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="card" *ngSwitchCase="1">
-      <div class="card-header">Recursively</div>
+    <div class="card" *ngSwitchCase="2">
+      <div class="card-header">Job starts recursively with the given rule</div>
       <div class="card-body">
-        <app-job-recursive-schedule [cronString]="'* * * * * *'"></app-job-recursive-schedule>
+        <app-job-recursive-schedule [startConditionForm]="jobStartConditionFormGroup" [readonly]="readonly"></app-job-recursive-schedule>
       </div>
     </div>
   </div>

@@ -9,10 +9,19 @@ describe('Application log class tests',  () => {
       'JobProgram',
       {
         className: 'JobProgram',
-        parameterGroups: {
-          GROUP1: { position: 1, text: { default: 'text of group'} }},
         parameterDefinitions: {
-          param1: { position: 1, text: {default: 'Label1'}, group: 'GROUP1'} }
+          GROUP1: {
+            text: 'Group One',
+            parameters: {
+              PARAM1: {
+                type: 1,
+                text: 'Label1',
+                mandatory: true,
+              }
+            }
+          },
+        }
+
       });
     let specificTime = new Date();
     specificTime.setSeconds(specificTime.getSeconds() + 1);
@@ -20,7 +29,7 @@ describe('Application log class tests',  () => {
       name: 'applicationLog',
       description: 'job description',
       steps: [
-        {program: 'JobProgram', parameters: {param1: 'gogo1'}}
+        {program: 'JobProgram', parameters: {PARAM1: 'gogo1'}}
       ],
       startCondition: { mode: 1, specificTime: specificTime.toString() }
     });

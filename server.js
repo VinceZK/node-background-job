@@ -36,40 +36,39 @@ router.get('/job/*', (req, res) => { // The default index.html
 
 app.use('/', router);
 
-new Job(  {
-  name: 'testImmediateJob',
-  description: 'immediate job',
-  steps: [
-    {program: 'testJobProgram', parameters: {PARAM1: 'value1'}}
-  ],
-  startCondition: { mode: 0 }
-});
-let now = new Date();
-let specificTime = new Date();
-specificTime.setSeconds(now.getSeconds() + 2);
-new Job(  {
-  name: 'testSpecTimeJob',
-  description: 'specific time job',
-  steps: [
-    {program: 'testJobProgram', parameters: {PARAM1: 'value2'}}
-  ],
-  startCondition: { mode: 1, specificTime:  specificTime.toString() }
-});
-let end = new Date();
-end.setSeconds(now.getSeconds() + 8);
-new Job(  {
-  name: 'testRecursiveJob',
-  description: 'specific time job',
-  steps: [
-    {program: 'testJobProgram', parameters: {PARAM1: 'value2'}}
-  ],
-  startCondition: {
-    mode: 2,
-    cronString: '*/2 * * * * *',
-    cronOption: {}
-  }
-});
-
+// new Job(  {
+//   name: 'testImmediateJob',
+//   description: 'immediate job',
+//   steps: [
+//     {program: 'testJobProgram', parameters: {PARAM1: 'value1'}}
+//   ],
+//   startCondition: { mode: 0 }
+// });
+// let now = new Date();
+// let specificTime = new Date();
+// specificTime.setSeconds(now.getSeconds() + 2);
+// new Job(  {
+//   name: 'testSpecTimeJob',
+//   description: 'specific time job',
+//   steps: [
+//     {program: 'testJobProgram', parameters: {PARAM1: 'value2'}}
+//   ],
+//   startCondition: { mode: 1, specificTime:  specificTime.toString() }
+// });
+// let end = new Date();
+// end.setSeconds(now.getSeconds() + 8);
+// new Job(  {
+//   name: 'testRecursiveJob',
+//   description: 'specific time job',
+//   steps: [
+//     {program: 'testJobProgram', parameters: {PARAM1: 'value2'}}
+//   ],
+//   startCondition: {
+//     mode: 2,
+//     cronString: '*/2 * * * * *',
+//     cronOption: {}
+//   }
+// });
 process.on('SIGINT',function(){
   console.log("Closing.....");
   process.exit()

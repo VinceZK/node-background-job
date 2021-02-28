@@ -30,7 +30,7 @@ export const msgStore = [
   { msgCat: 'JOB',
     msgName: 'INVALID',
     msgText: {
-      EN: {shortText: 'The data is invalid',
+      EN: {shortText: 'Job contains invalid inputs, correct it before doing next actions',
         longText: 'dummy'}
     }
   },
@@ -51,7 +51,14 @@ export const msgStore = [
   { msgCat: 'JOB',
     msgName: 'INVALID_PARAMETER_VALUE',
     msgText: {
-      EN: {shortText: 'The parameter value %s is invalid',
+      EN: {shortText: 'Invalid parameter value',
+        longText: 'dummy'}
+    }
+  },
+  { msgCat: 'JOB',
+    msgName: 'NO_STEPS',
+    msgText: {
+      EN: {shortText: 'You must at least assign one job step',
         longText: 'dummy'}
     }
   }

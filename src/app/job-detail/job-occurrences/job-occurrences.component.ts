@@ -11,11 +11,25 @@ export class JobOccurrencesComponent implements OnInit {
   @Input() readonly!: boolean;
   @Input() mainForm!: FormGroup;
   jobOccurrence!: FormArray;
-  private attrCtrls!: AttributeBase[];
+  isSearchListShown = true;
+  startDate!: Date;
+  endDate!: Date;
+  attrCtrls!: AttributeBase[];
 
   constructor(private attributeControlService: AttributeControlService) { }
 
   ngOnInit(): void {
+
+  }
+  onChangeStartDate(newDate: Date | null): void {
+
+  }
+
+  onChangeEndDate(newDate: Date | null): void {
+
+  }
+
+  search(): void {
 
   }
 }

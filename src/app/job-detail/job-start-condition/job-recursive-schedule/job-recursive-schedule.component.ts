@@ -12,15 +12,15 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   cronArray!: string[];
   cronArrayAt = ['*', '*', '*', '*', '*', '*'];
   cronArrayEvery = [0, 0, 0, 0, 0, 0];
-  cronCurrentDate = '';
-  cronEndDate = '';
-  tz = '';
-  @Input() cronString!: string;
-  @Input() cronOption: any;
+  cronString = '';
+  cronCurrentDate!: Date;
+  cronEndDate!: Date;
+  tz: null;
+
+  @Input() startConditionForm!: FormGroup;
+  @Input() readonly!: boolean;
   @ViewChild('cronForm')
   cronForm!: FormGroup;
-  @ViewChild('f')
-  textForm!: FormGroup;
 
   constructor() { }
 
@@ -28,6 +28,16 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(): void {
+    this.cronString = this.startConditionForm.get('cronString')?.value || '* * * * * *';
+    if (this.startConditionForm.get('cronCurrentDate')?.value) {
+      // @ts-ignore
+      this.cronCurrentDate = new Date(this.startConditionForm.get('cronCurrentDate')?.value + ' UTC');
+    }
+    if (this.startConditionForm.get('cronEndDate')?.value) {
+      // @ts-ignore
+      this.cronEndDate = new Date(this.startConditionForm.get('cronEndDate')?.value + ' UTC');
+    }
+    this.tz = this.startConditionForm.get('tz')?.value;
     this._convertCronString2Array();
   }
 
@@ -73,5 +83,42 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
 
   onKeydown(e: any): boolean {
     return e.keyCode !== 32;
+  }
+
+  onChangeCurrentDate(newDate: Date | null): void {
+    const mySQLDateStr = newDate ? this._convert2MySQLDateTime(newDate) : null;
+    this.startConditionForm.get('cronCurrentDate')?.setValue(mySQLDateStr);
+    this.startConditionForm.get('cronCurrentDate')?.markAsDirty();
+  }
+
+  onChangeEndDate(newDate: Date | null): void {
+    const mySQLDateStr = newDate ? this._convert2MySQLDateTime(newDate) : null;
+    this.startConditionForm.get('cronEndDate')?.setValue(mySQLDateStr);
+    this.startConditionForm.get('cronEndDate')?.markAsDirty();
+  }
+
+  _convert2MySQLDateTime(date: Date): string {
+    return date.getFullYear().toString() + '-' + ('0' + (date.getMonth() + 1)).slice(-2)
+      + '-' + ('0' + (date.getDate())).slice(-2) + ` ` + date.toTimeString().slice(0, 5);
+  }
+
+  updateMainForm(): void {
+    if (!this.cronForm.dirty || this.cronForm.pristine) { return; }
+
+    if (this.cronForm.invalid) {
+      this.startConditionForm.setErrors({message: 'Errors in start condition'});
+      return;
+    }
+
+    const cronStringCtrl = this.startConditionForm.get('cronString');
+    const tzCtrl = this.startConditionForm.get('tz');
+    if (cronStringCtrl && this.cronString !== this.startConditionForm.get('cronString')?.value) {
+      cronStringCtrl.setValue(this.cronString);
+      cronStringCtrl.markAsDirty();
+    }
+    if (tzCtrl && this.tz !== this.startConditionForm.get('tz')?.value) {
+      tzCtrl.setValue(this.tz);
+      tzCtrl.markAsDirty();
+    }
   }
 }

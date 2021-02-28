@@ -91,11 +91,16 @@ export class JobParametersComponent implements OnInit, OnChanges {
     return this.parameters.filter( param => param.group === groupName);
   }
 
-  generateParamValues(): void {
+  generateParamValues(): boolean {
+    if (this.paramFormGroup.invalid) {
+      this.messageService.reportMessage('JOB', 'INVALID_PARAMETER_VALUE', 'E');
+      return false;
+    }
     if (this.paramFormGroup.dirty) {
       this.currentJobStep.get('parameters')?.setValue(JSON.stringify(this.paramFormGroup.getRawValue()));
       this.currentJobStep.markAsDirty();
     }
+    return true;
   }
 }
 

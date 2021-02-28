@@ -143,16 +143,20 @@ export default class JobOccurrence {
     });
     occInstance.r_start_condition = [
       { key: uuid(), mode: this.entry.startCondition.mode,
-        cronString: this.entry.startCondition.cronString ,
-        cronCurrentDate: this.entry.startCondition.cronOption? this.entry.startCondition.cronOption.currentDate : null,
-        cronEndDate: this.entry.startCondition.cronOption? this.entry.startCondition.cronOption.endDate : null}
+        specificTime: this.entry.startCondition.specificTime
+          ? this.entry.startCondition.specificTime.slice(0, 19).replace('T', ' ')
+          : null,
+        cronString: this.entry.startCondition.cronString,
+        cronCurrentDate: this.entry.startCondition.cronCurrentDate
+          ? this.entry.startCondition.cronCurrentDate.slice(0, 19).replace('T', ' ')
+          : null,
+        cronEndDate: this.entry.startCondition.cronEndDate
+          ? this.entry.startCondition.cronEndDate.slice(0, 19).replace('T', ' ')
+          : null
+      }
     ];
-    if (this.entry.startCondition.specificTime) {
-      occInstance.r_start_condition[0].specificTime =
-        this.entry.startCondition.specificTime.slice(0, 19).replace('T', ' ');
-    }
-    if (this.entry.startCondition.cronOption && this.entry.startCondition.cronOption.tz) {
-      occInstance.r_start_condition[0].tz = this.entry.startCondition.cronOption.tz;
+    if (this.entry.startCondition.tz) { // null is not in the data domain of timezone
+      occInstance.r_start_condition[0].tz = this.entry.startCondition.tz
     }
     if (this.outputSetting) {
       occInstance.r_output_setting = [{ ...this.outputSetting }];

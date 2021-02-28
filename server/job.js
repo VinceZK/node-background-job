@@ -32,7 +32,9 @@ export default class Job {
           jobEntry.status = result.job[0].status;
           jobEntry.mode = result.job[0].mode;
           jobEntry.description = {};
-          result.r_text.forEach( text => jobEntry.description[text.langu] = text.text);
+          if (result.r_text) {
+            result.r_text.forEach( text => jobEntry.description[text.langu] = text.text);
+          }
           if (result.r_job_identity) {
             jobEntry.identity = { ...result.r_job_identity[0] };
           }
@@ -65,8 +67,12 @@ export default class Job {
     if (oldJobEntry.status === JobStatusEnum.scheduled || oldJobEntry.status === JobStatusEnum.completed ) {
       throw new JobError('JOB_CANNOT_BE_CHANGED', oldJobEntry.status);
     }
+
     this.#Jobs.splice(oldJobIndex, 1); // Delete the old job entry
+    changedJobDefinition.createTime = oldJobEntry.createTime;
+    changedJobDefinition.createdBy = oldJobEntry.createdBy;
     const newJob = new Job(changedJobDefinition);
+    newJob.INSTANCE_GUID = oldJobEntry.instance.INSTANCE_GUID;
     if (process.env.USE_DB !== 'true') {
       return changedJobDefinition;
     }
@@ -77,7 +83,7 @@ export default class Job {
       const newJobIndex = this.#Jobs.findIndex( job => job.name === changedJobDefinition.name);
       this.#Jobs.splice(newJobIndex, 1); // Delete the new job entry
       this.#Jobs.push(oldJobEntry); // Restore the old job entry
-      return errors ;
+      throw errors ;
     }
   }
   /**
@@ -105,7 +111,7 @@ export default class Job {
     let queryObject = {ENTITY_ID: 'job', RELATION_ID: 'job', DISTINCT: true};
     queryObject.PROJECTION = [
       'name', 'status', 'mode', 'finishedOccurrences', 'failedOccurrences', 'canceledOccurrences',
-      {FIELD_NAME: 'text', ALIAS: 'description', RELATION_ID: 'r_text'}
+      {FIELD_NAME: 'text', RELATION_ID: 'r_text'}
     ];
     queryObject.FILTER = [{
       FIELD_NAME: 'langu',
@@ -117,7 +123,7 @@ export default class Job {
       queryObject.FILTER.push({
         FIELD_NAME: 'name',
         OPERATOR: 'CN',
-        LOW: filter.name
+        LOW: filter.name_includes
       });
     }
     if (filter && filter.status) {
@@ -151,6 +157,10 @@ export default class Job {
         if (errs) {
           reject(errs);
         } else {
+          rows.forEach( row => {
+            row.description = {DEFAULT: row.text};
+            delete row.text;
+          });
           resolve(rows);
         }
       });
@@ -184,7 +194,9 @@ export default class Job {
    *     mode: StartConditionEnum.Immediately || Specific-time || Recurrently || On-event,
    *     specificTime: Date(),
    *     cronString: '<cron-style string>',
-   *     cronOption: {currentDate: '', endDate: '', tz: ''},
+   *     cronCurrentDate: Date(),
+   *     cronEndDate: Date(),
+   *     tz: string,
    *     onEvent: {eventEmitter: object, event: 'eventName' }
    *   },
    *   outputSetting: {
@@ -212,7 +224,7 @@ export default class Job {
     this.name = jobName;
   }
   #deriveDescription(description) {
-    if (description) {
+    if (!description) {
       return null;
     }
     return typeof description === 'string'? { DEFAULT: description } : description;
@@ -297,16 +309,16 @@ export default class Job {
       case StartConditionEnum.recurrently:
         let currentDate = null;
         let endDate = null;
-        if (this.startCondition.cronOption && this.startCondition.cronOption.currentDate) {
-          currentDate = new Date(this.startCondition.cronOption.currentDate);
-          if (isNaN(currentDate)) {
-            throw new JobError('INVALID_DATE_STRING', this.startCondition.cronOption.currentDate);
+        if (this.startCondition.cronCurrentDate) {
+          currentDate = new Date(this.startCondition.cronCurrentDate);
+          if (isNaN(currentDate.getTime())) {
+            throw new JobError('INVALID_DATE_STRING', this.startCondition.cronCurrentDate);
           }
         }
-        if (this.startCondition.cronOption && this.startCondition.cronOption.endDate) {
-          endDate = new Date(this.startCondition.cronOption.endDate);
-          if (isNaN(endDate)) {
-            throw new JobError('INVALID_DATE_STRING', this.startCondition.cronOption.endDate);
+        if (this.startCondition.cronEndDate) {
+          endDate = new Date(this.startCondition.cronEndDate);
+          if (isNaN(endDate.getTime())) {
+            throw new JobError('INVALID_DATE_STRING', this.startCondition.cronEndDate);
           }
         }
         Job.checkStartEndTime(currentDate, endDate, now);
@@ -340,7 +352,7 @@ export default class Job {
       canceledOccurrences: 0,
       createdBy: jobDefinition.createdBy || 'DH001',
       createTime: jobDefinition.createTime || now,
-      lastChangedBy: jobDefinition.createdBy || 'DH001',
+      lastChangedBy: jobDefinition.lastChangedBy || 'DH001',
       lastChangeTime: now,
       instance: this
     };
@@ -383,6 +395,9 @@ export default class Job {
 
   #convert2JorInstance() {
     const jobInstance = {ENTITY_ID: 'job'};
+    if (this.INSTANCE_GUID) {
+      jobInstance.INSTANCE_GUID = this.INSTANCE_GUID;
+    }
     jobInstance.job = [
       { name: this.entry.name, status: this.entry.status,
         finishedOccurrences: this.entry.finishedOccurrences,
@@ -395,9 +410,9 @@ export default class Job {
         lastChangeTime: this.entry.lastChangeTime,
         jobServer: process.env.JOB_SERVER, jobNode: process.pid }
     ];
-    if (this.description) {
-      jobInstance.r_text = Object.keys(this.description).map( languCode => {
-        return { key: uuid(), langu: languCode, text: this.description[languCode]}
+    if (this.entry.description) {
+      jobInstance.r_text = Object.keys(this.entry.description).map( languCode => {
+        return { key: uuid(), langu: languCode, text: this.entry.description[languCode]}
       });
     }
     if (this.identity) {
@@ -409,22 +424,26 @@ export default class Job {
     });
     jobInstance.r_start_condition = [
       { key: uuid(), mode: this.entry.startCondition.mode,
-        cronString: this.entry.startCondition.cronString ,
-        cronCurrentDate: this.entry.startCondition.cronOption? this.entry.startCondition.cronOption.currentDate : null,
-        cronEndDate: this.entry.startCondition.cronOption? this.entry.startCondition.cronOption.endDate : null}
+        specificTime: this.entry.startCondition.specificTime
+          ? this.entry.startCondition.specificTime.slice(0, 19).replace('T', ' ')
+          : null,
+        cronString: this.entry.startCondition.cronString,
+        cronCurrentDate: this.entry.startCondition.cronCurrentDate
+          ? this.entry.startCondition.cronCurrentDate.slice(0, 19).replace('T', ' ')
+          : null,
+        cronEndDate: this.entry.startCondition.cronEndDate
+          ? this.entry.startCondition.cronEndDate.slice(0, 19).replace('T', ' ')
+          : null
+      }
     ];
-    if (this.entry.startCondition.specificTime) {
-      jobInstance.r_start_condition[0].specificTime =
-        this.entry.startCondition.specificTime.slice(0, 19).replace('T', ' ');
-    }
-    if (this.entry.startCondition.cronOption && this.entry.startCondition.cronOption.tz) {
-      jobInstance.r_start_condition[0].tz = this.entry.startCondition.cronOption.tz;
+    if (this.entry.startCondition.tz) { // null is not in the data domain of timezone
+      jobInstance.r_start_condition[0].tz = this.entry.startCondition.tz
     }
     if (this.outputSetting) {
       jobInstance.r_output_setting = [{ ...this.outputSetting }];
       jobInstance.r_output_setting[0].key = uuid();
     }
-    jobInstance.relationships = [];
+    // jobInstance.relationships = [];
     return jobInstance;
   }
 
@@ -502,8 +521,11 @@ export default class Job {
       case StartConditionEnum.specificTime:
         return scheduledDateTime < this.startDateTime;
       case StartConditionEnum.recurrently:
-        const cronOption = { ...this.startCondition.cronOption };
-        cronOption.currentDate = scheduledDateTime;
+        const cronOption = {
+          currentDate: scheduledDateTime,
+          endDate: this.startCondition.cronEndDate,
+          tz: this.startCondition.tz
+        };
         let interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);
         return interval.hasNext();
       case StartConditionEnum.onEvent:
@@ -632,11 +654,11 @@ export default class Job {
 
     Job.checkStartEndTime(start, end, now);
 
-    // Reassign the currentDate and endDate for the scheduling.
-    let cronOption = { ...this.startCondition.cronOption };
-    cronOption.currentDate = start;
-    cronOption.endDate = end;
-    return cronOption;
+    return {
+      currentDate: start,
+      endDate: end,
+      tz: this.startCondition.tz
+    }
   }
 
 }

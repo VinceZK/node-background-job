@@ -1,6 +1,6 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, Input, OnInit, ViewChild} from '@angular/core';
 import {FormGroup} from '@angular/forms';
-import {AttributeBase, AttributeControlService, RelationMeta} from 'jor-angular';
+import {JobRecursiveScheduleComponent} from './job-recursive-schedule/job-recursive-schedule.component';
 
 @Component({
   selector: 'app-job-start-condition',
@@ -8,36 +8,56 @@ import {AttributeBase, AttributeControlService, RelationMeta} from 'jor-angular'
   styleUrls: ['./job-start-condition.component.css']
 })
 export class JobStartConditionComponent implements OnInit {
+  jobStartConditionFormGroup!: FormGroup;
+  specificTime!: Date;
   @Input() readonly!: boolean;
   @Input() mainForm!: FormGroup;
-  @Input() relationMetas!: RelationMeta[];
-  jobStartConditionFormGroup!: FormGroup;
-  private attrCtrls!: AttributeBase[];
+  @ViewChild(JobRecursiveScheduleComponent)
+  jobRecursiveScheduleComponent!: JobRecursiveScheduleComponent;
 
-  get getSpecificTimeDisplay(): string {
-    return this.jobStartConditionFormGroup.get('mode')?.value === 1 ? 'block' : 'none';
-  }
-
-  constructor(private attributeControlService: AttributeControlService) { }
+  constructor() { }
 
   ngOnInit(): void {
     this.jobStartConditionFormGroup = this.mainForm.get('startCondition') as FormGroup;
-    this.attrCtrls = this.attributeControlService.toAttributeControl(
-      // @ts-ignore
-      this.relationMetas.find( relationMeta => relationMeta.RELATION_ID === 'r_start_condition').ATTRIBUTES);
+    this.specificTime = new Date(this.jobStartConditionFormGroup.get('specificTime')?.value + ' UTC');
   }
 
-  getJobAttrCtrlFromID(fieldName: string): AttributeBase {
-    // @ts-ignore
-    return this.attrCtrls.find( attrCtrl => attrCtrl.name === fieldName);
+  updateMainForm(): void {
+    const modeCtrl = this.jobStartConditionFormGroup.get('mode');
+    if (modeCtrl?.value === 2) {
+      this.jobRecursiveScheduleComponent.updateMainForm();
+    }
+  }
+
+  onChangeSpecificDate(newDate: Date): void {
+    const mySQLDateStr = newDate.getFullYear().toString() + '-' + ('0' + (newDate.getMonth() + 1)).slice(-2)
+      + '-' + ('0' + (newDate.getDate())).slice(-2) + ` ` + newDate.toTimeString().slice(0, 5);
+    this.jobStartConditionFormGroup.get('specificTime')?.setValue(mySQLDateStr);
+    this.jobStartConditionFormGroup.get('specificTime')?.markAsDirty();
   }
 
   onChangeMode(): void {
-    // this.currentMode++;
-    // if (this.currentMode === 4) {
-    //   this.currentMode = 0;
-    // }
-    // this.jobStartConditionFormGroup.get('mode')?.setValue(this.currentMode);
-    // console.log(this.jobStartConditionFormGroup.get('mode')?.value);
+    const modeCtrl = this.jobStartConditionFormGroup.get('mode');
+    this.mainForm.get('mode')?.setValue(modeCtrl?.value);
+    switch (modeCtrl?.value) {
+      case 0:
+        this.jobStartConditionFormGroup.get('specificTime')?.setValue(null);
+        this.jobStartConditionFormGroup.get('cronString')?.setValue(null);
+        this.jobStartConditionFormGroup.get('cronCurrentDate')?.setValue(null);
+        this.jobStartConditionFormGroup.get('cronEndDate')?.setValue(null);
+        this.jobStartConditionFormGroup.get('tz')?.setValue(null);
+        break;
+      case 1:
+        this.jobStartConditionFormGroup.get('cronString')?.setValue(null);
+        this.jobStartConditionFormGroup.get('cronCurrentDate')?.setValue(null);
+        this.jobStartConditionFormGroup.get('cronEndDate')?.setValue(null);
+        this.jobStartConditionFormGroup.get('tz')?.setValue(null);
+        break;
+      case 2:
+        this.jobStartConditionFormGroup.get('specificTime')?.setValue(null);
+        break;
+      case 3:
+        break;
+    }
   }
 }

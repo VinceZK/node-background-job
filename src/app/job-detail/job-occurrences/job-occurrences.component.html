@@ -1,1 +1,70 @@
-<p>job-occurrences works!</p>
+<div class="row">
+  <div *ngIf="isSearchListShown" class="col-4">
+    <div class="mb-2 flex-column">
+      <div class="btn-toolbar justify-content-between ">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusInitial" value="0">
+          <label class="form-check-label" for="statusInitial">Initial (3)</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusReady" value="1">
+          <label class="form-check-label" for="statusReady">Ready (4)</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusRunning" value="2">
+          <label class="form-check-label" for="statusRunning">Running (2)</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusFinished" value="3">
+          <label class="form-check-label" for="statusFinished">Finished (2)</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusFailed" value="4">
+          <label class="form-check-label" for="statusFailed">Failed (3)</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusCanceled" value="5">
+          <label class="form-check-label" for="statusCanceled">Canceled (1)</label>
+        </div>
+      </div>
+
+      <div class="mt-3 row">
+        <div class="col-9">
+          <div class="form-group row">
+            <label for="startFrom" class="col-sm-3 col-form-label col-form-label-sm">From:</label>
+            <div class="col-sm-9">
+              <input id="startFrom" name="startFrom" type="datetime-local" class="form-control form-control-sm"
+                     [readOnly]="readonly" [(date)]="startDate" (dateChange)="onChangeStartDate($event)">
+            </div>
+          </div>
+          <div class="form-group row">
+            <label for="endAt" class="col-sm-3 col-form-label col-form-label-sm">To:</label>
+            <div class="col-sm-9">
+              <input id="endAt" name="endAt" type="datetime-local" class="form-control form-control-sm"
+                     [readOnly]="readonly" [(date)]="endDate" (dateChange)="onChangeEndDate($event)">
+            </div>
+          </div>
+        </div>
+        <div class="form-group col-3">
+          <button type="button" id="search" class="btn btn-primary btn-sm position-absolute fixed-bottom"
+                  (click)="search()">Search</button>
+        </div>
+      </div>
+    </div>
+<!--    <div class="list-group">-->
+<!--      <a *ngFor="let entityType of entityTypeList" routerLink="/model/entity-type/{{entityType.ENTITY_ID}}" routerLinkActive="active"-->
+<!--         (click)="onSelect(entityType)" class="list-group-item list-group-item-action flex-column align-items-start">-->
+<!--        <div class="d-flex w-100 justify-content-between">-->
+<!--          <h5 class="mb-1">{{entityType.ENTITY_ID}}</h5>-->
+<!--          <small>version: {{entityType.VERSION_NO}}</small>-->
+<!--        </div>-->
+<!--        <p class="mb-1">{{entityType.ENTITY_DESC}}</p>-->
+<!--        &lt;!&ndash;<small>created by: {{entityType.CREATE_BY}} @{{entityType.CREATE_TIME}}</small> <br/>&ndash;&gt;-->
+<!--        <small>last changed by: {{entityType.LAST_CHANGE_BY}} @{{entityType.LAST_CHANGE_TIME}}</small>-->
+<!--      </a>-->
+<!--    </div>-->
+  </div>
+  <div [ngClass]="{'col-8': isSearchListShown, 'col-12': !isSearchListShown}">
+    <router-outlet></router-outlet>
+  </div>
+</div>

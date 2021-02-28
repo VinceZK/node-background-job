@@ -1,6 +1,6 @@
 import JobProgram from '../server/jobProgram.js';
 
-describe.only('Job program super class tests', function () {
+describe('Job program super class tests', function () {
 
   before('Register a dummy job program', () => {
     JobProgram.registerJobProgram('testProgram', {className: 'TestProgram'});

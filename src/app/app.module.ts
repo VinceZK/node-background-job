@@ -15,6 +15,7 @@ import { JobOccurrencesComponent } from './job-detail/job-occurrences/job-occurr
 import { AdminComponent } from './job-detail/admin/admin.component';
 import { JobParametersComponent } from './job-detail/job-parameters/job-parameters.component';
 import { JobRecursiveScheduleComponent } from './job-detail/job-start-condition/job-recursive-schedule/job-recursive-schedule.component';
+import { DateDirective } from './job-detail/date.directive';
 
 const appRoutes: Routes = [
   // {
@@ -39,7 +40,8 @@ const appRoutes: Routes = [
     JobOccurrencesComponent,
     AdminComponent,
     JobParametersComponent,
-    JobRecursiveScheduleComponent
+    JobRecursiveScheduleComponent,
+    DateDirective
   ],
   imports: [
     HttpClientModule,

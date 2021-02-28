@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
+import {Component, OnInit, ViewChild} from '@angular/core';
+import {FormArray, FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {JobService} from '../job.service';
 import {
@@ -15,6 +15,7 @@ import {switchMap} from 'rxjs/operators';
 import {forkJoin, Observable, of} from 'rxjs';
 import {Job} from '../job-types';
 import {existingJobNameValidator} from '../async-validators';
+import {JobStartConditionComponent} from './job-start-condition/job-start-condition.component';
 
 @Component({
   selector: 'app-job-detail',
@@ -32,7 +33,15 @@ export class JobDetailComponent implements OnInit {
   action!: string | null;
   originalValue!: Job;
   changedValue!: Job;
-  tabStrip = 2;
+  tabStrip = 3;
+
+  @ViewChild(JobStartConditionComponent)
+  jobStartConditionComponent!: JobStartConditionComponent;
+
+  get numberOfSteps(): number {
+    const stepsArray = this.mainForm.get('steps') as FormArray;
+    return stepsArray.length;
+  }
 
   constructor(private fb: FormBuilder,
               private route: ActivatedRoute,
@@ -92,6 +101,13 @@ export class JobDetailComponent implements OnInit {
   }
 
   switchTabStrip(tabStripID: number): void {
+    if (this.tabStrip === 2) {
+      this.jobStartConditionComponent.updateMainForm();
+      if (this.mainForm.invalid) {
+        this.messageService.reportMessage('JOB', 'INVALID', 'E');
+        return;
+      }
+    }
     this.tabStrip = tabStripID;
   }
 
@@ -115,9 +131,12 @@ export class JobDetailComponent implements OnInit {
 
   _switch2DisplayMode(): void {
     this.readonly = true;
+    this.isNewMode = false;
 
     const jobNameCtrl = this.mainForm.get('name') as FormControl;
     jobNameCtrl.clearAsyncValidators();
+    const startConditionCtrl = this.mainForm.get('startCondition') as FormGroup;
+    startConditionCtrl.get('mode')?.disable();
 
     this.mainForm.markAsPristine();
     // Replace the URL from change to display
@@ -132,6 +151,8 @@ export class JobDetailComponent implements OnInit {
       jobNameCtrl.setAsyncValidators(
         existingJobNameValidator(this.jobService, this.messageService));
     }
+    const startConditionCtrl = this.mainForm.get('startCondition') as FormGroup;
+    startConditionCtrl.get('mode')?.enable();
 
     // Replace the URL from to display
     if (this.action === 'display') {this.action = 'change'; }
@@ -143,7 +164,7 @@ export class JobDetailComponent implements OnInit {
       name: '', status: 0, mode: 0,
       description: {DEFAULT: ''},
       identity: {id: ''},
-      steps: [{ program: '', parameters: {}}],
+      steps: [],
       startCondition: {mode: 0, specificTime: null, cronString: null, cronCurrentDate: null, cronEndDate: null, tz: null},
       outputSetting: { console2ApplicationLog: false }
     };
@@ -199,13 +220,23 @@ export class JobDetailComponent implements OnInit {
         const messages = data as Message[];
         messages.forEach( msg => this.messageService.add(msg));
         if (messages[0].msgName === 'JOB_IS_SAVED') {
-          this._switch2DisplayMode();
+          // tslint:disable-next-line:no-shadowed-variable
+          this.jobService.getJob(this.mainForm.get('name')?.value).subscribe(data => {
+            if (data instanceof Message) {
+              this.messageService.add(data);
+            } else {
+              this._switch2DisplayMode();
+              this.originalValue = data as Job;
+              this.mainForm.reset(this.originalValue);
+            }
+          });
         }
       });
     }
   }
 
   _composeChanges(): boolean {
+    this.jobStartConditionComponent?.updateMainForm();
     if (this.mainForm.invalid) {
       this.messageService.reportMessage('JOB', 'INVALID', 'E');
       return false;
@@ -215,7 +246,14 @@ export class JobDetailComponent implements OnInit {
       this.messageService.reportMessage('JOB', 'NO_CHANGE', 'W');
       return false;
     }
+
+    const stepsFormArray = this.mainForm.get('steps') as FormArray;
+    if (stepsFormArray.length === 0) {
+      this.messageService.reportMessage('JOB', 'NO_STEPS', 'E');
+      return false;
+    }
     this.changedValue = this.mainForm.getRawValue();
+    // console.log(this.changedValue);
     return true;
   }
 
@@ -227,4 +265,7 @@ export class JobDetailComponent implements OnInit {
     }
   }
 
+  schedule(): void {
+
+  }
 }

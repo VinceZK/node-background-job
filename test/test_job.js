@@ -9,10 +9,18 @@ describe('Job Class tests',  () => {
       'JobProgram',
       {
         className: 'JobProgram',
-        parameterGroups: {
-          GROUP1: { position: 1, text: { default: 'text of group'} }},
         parameterDefinitions: {
-          param1: { position: 1, text: {default: 'Label1'}, group: 'GROUP1'} }
+          GROUP1: {
+            text: { default: 'text of group'},
+            parameters: {
+              param1: {
+                type: 1,
+                text: {default: 'Label1'},
+                mandatory: true,
+              }
+            }
+          }
+        }
       });
   });
 
@@ -156,9 +164,7 @@ describe('Job Class tests',  () => {
           steps: {program: 'JobProgram'},
           startCondition: {
             mode: 2,
-            cronOption: {
-              currentDate: 'adsfasdfs'
-            }
+            cronCurrentDate: 'adsfasdfs'
           }
         });
         (0).should.equal(1);
@@ -173,9 +179,7 @@ describe('Job Class tests',  () => {
           steps: {program: 'JobProgram'},
           startCondition: {
             mode: 2,
-            cronOption: {
-              endDate: 'adsfasdfs'
-            }
+            cronEndDate: 'adsfasdfs'
           }
         });
         (0).should.equal(1);
@@ -194,10 +198,8 @@ describe('Job Class tests',  () => {
           steps: {program: 'JobProgram'},
           startCondition: {
             mode: 2,
-            cronOption: {
-              currentDate: now.toString(),
-              endDate: then.toString()
-            }
+            cronCurrentDate: now.toString(),
+            cronEndDate: then.toString()
           }
         });
         (0).should.equal(1);
@@ -214,9 +216,7 @@ describe('Job Class tests',  () => {
           steps: {program: 'JobProgram'},
           startCondition: {
             mode: 2,
-            cronOption: {
-              endDate: then.toString()
-            }
+            cronEndDate: then.toString()
           }
         });
         (0).should.equal(1);
@@ -433,38 +433,42 @@ describe('Job Class tests',  () => {
     it('should return a cronOption: exceed timespan of the job', () => {
       let now = new Date();
       jobDefinition.name = 'testRecurrentJob2';
-      jobDefinition.startCondition.cronOption.currentDate = new Date();
-      jobDefinition.startCondition.cronOption.currentDate.setSeconds(now.getSeconds() + 1000);
-      jobDefinition.startCondition.cronOption.endDate = new Date();
-      jobDefinition.startCondition.cronOption.endDate.setSeconds(now.getSeconds() + 2000);
+      jobDefinition.startCondition.cronCurrentDate = new Date();
+      jobDefinition.startCondition.cronCurrentDate.setSeconds(now.getSeconds() + 1000);
+      jobDefinition.startCondition.cronEndDate = new Date();
+      jobDefinition.startCondition.cronEndDate.setSeconds(now.getSeconds() + 2000);
       const job = new Job(jobDefinition);
       let end = new Date();
       end.setSeconds(now.getSeconds() + 2200);
       const cronOption = job.generateCronOption(end);
-      cronOption.should.eql(jobDefinition.startCondition.cronOption);
+      cronOption.should.eql({
+        currentDate: jobDefinition.startCondition.cronCurrentDate,
+        endDate: jobDefinition.startCondition.cronEndDate,
+        tz: jobDefinition.startCondition.tz
+      });
     });
     it('should return a cronOption: end time exceeds the max(2147483)', () => {
       let now = new Date();
       jobDefinition.name = 'testRecurrentJob3';
-      jobDefinition.startCondition.cronOption.currentDate = new Date();
-      jobDefinition.startCondition.cronOption.currentDate.setSeconds(now.getSeconds() + 1000);
-      jobDefinition.startCondition.cronOption.endDate = null;
+      jobDefinition.startCondition.cronCurrentDate = new Date();
+      jobDefinition.startCondition.cronCurrentDate.setSeconds(now.getSeconds() + 1000);
+      jobDefinition.startCondition.cronEndDate = null;
       const job = new Job(jobDefinition);
       let end = new Date();
       let max = new Date();
       end.setSeconds(now.getSeconds() + 3147483);
       max.setSeconds(now.getSeconds() + 2147483);
       const cronOption = job.generateCronOption(end);
-      cronOption.currentDate.should.eql(jobDefinition.startCondition.cronOption.currentDate);
+      cronOption.currentDate.should.eql(jobDefinition.startCondition.cronCurrentDate);
       (cronOption.endDate - max).should.within(0, 100);
     });
     it('should fail: end date is before the last scheduled occurrence', async () => {
       let now = new Date();
       jobDefinition.name = 'testRecurrentJob4';
       jobDefinition.startCondition.cronString = '*/3 * * * * *'; // every 3 seconds
-      jobDefinition.startCondition.cronOption.currentDate = new Date();
-      jobDefinition.startCondition.cronOption.endDate = new Date();
-      jobDefinition.startCondition.cronOption.endDate.setSeconds(now.getSeconds() + 4);
+      jobDefinition.startCondition.cronCurrentDate = new Date();
+      jobDefinition.startCondition.cronEndDate = new Date();
+      jobDefinition.startCondition.cronEndDate.setSeconds(now.getSeconds() + 4);
       try {
         const job = new Job(jobDefinition);
         await job.scheduleOccurrences();
@@ -477,7 +481,6 @@ describe('Job Class tests',  () => {
         job.generateCronOption(end);
         (1).should.eql(2);
       } catch (e) {
-        console.log(e.message);
         e.message.msgName.should.eql('END_DATE_BEFORE_CURRENT_DATE');
       }
     });
@@ -487,8 +490,8 @@ describe('Job Class tests',  () => {
       let now = new Date();
       let end = new Date();
       end.setSeconds(now.getSeconds() + 8);
-      jobDefinition.startCondition.cronOption.currentDate = now;
-      jobDefinition.startCondition.cronOption.endDate = end;
+      jobDefinition.startCondition.cronCurrentDate = now;
+      jobDefinition.startCondition.cronEndDate = end;
       try{
         const job = new Job(jobDefinition);
         let start = new Date();
