@@ -206,6 +206,9 @@ export default class JobProgram {
     }
     if (typeof parameters === 'string') {
       parameters = JSON.parse(parameters);
+      if (typeof parameters === 'string') {
+        parameters = JSON.parse(parameters);
+      }
     }
     for (const [key, value] of Object.entries(parameters)) {
       let paramDefinition = paramMap[key];

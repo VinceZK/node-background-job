@@ -36,6 +36,43 @@ router.get('/job/*', (req, res) => { // The default index.html
 
 app.use('/', router);
 
+import cluster from 'cluster';
+import Scheduler from './server/scheduler.js';
+import os from 'os';
+Scheduler.getPreviousPIDs()
+  .catch( errors => console.error(errors))
+  .then((prevNumNodes) => {
+    const numNodes = process.env.NUM_NODES || os.cpus().length;
+    // TODO: if preNumNodes !== numNodes, then apply redistribution of jobs.
+    if (cluster.isMaster) {
+      for (let i = 0; i < numNodes; i++) {
+        let worker = cluster.fork({previousPID: Scheduler.previousPIDs[i]});
+        console.log(`worker ${worker.id}/${worker.process.pid} is generated`);
+      }
+
+      cluster.on('exit', (worker, code, signal) => {
+        console.log(`worker ${worker.id}/${worker.process.pid} is dead:, ${worker.isDead()}`);
+        const newWorker = cluster.fork();
+        console.log(`new worker ${newWorker.id}/${newWorker.process.pid}  is generated:`);
+      });
+    } else {
+      Scheduler.on()
+        .then( () => {app.listen(3000, () => console.log('Example app listening on port 3000!'));})
+        .catch( error => console.error(`PID ${process.pid}: `, error.message || error));
+    }
+  });
+
+
+
+
+
+
+
+
+
+
+
+
 // new Job(  {
 //   name: 'testImmediateJob',
 //   description: 'immediate job',
@@ -69,55 +106,9 @@ app.use('/', router);
 //     cronOption: {}
 //   }
 // });
-process.on('SIGINT',function(){
-  console.log("Closing.....");
-  process.exit()
-});
-
-app.listen(3000, () => console.log('Example app listening on port 3000!'));
-
-// if (cluster.isMaster) {
-//   console.log(`Master ${process.pid} is running`);
+// process.on('SIGINT',function(){
+//   console.log("Closing.....");
+//   process.exit()
+// });
 //
-//   // Keep track of http requests
-//   let numReqs = 0;
-//   // setInterval(() => {
-//   //   console.log(`numReqs = ${numReqs}`);
-//   // }, 10000);
-//
-//   // Count requests
-//   function messageHandler(msg) {
-//     if (msg.cmd && msg.cmd === 'notifyRequest') {
-//       numReqs += 1;
-//     }
-//   }
-//
-//   // Start workers and listen for messages containing notifyRequest
-//   const numCPUs = 2;
-//   for (let i = 0; i < numCPUs; i++) {
-//     let worker = cluster.fork({server: process.env.server});
-//     console.log(`worker ${worker.id}/${worker.process.pid} is generated`);
-//   }
-//
-//   for (const id in cluster.workers) {
-//     cluster.workers[id].on('message', messageHandler);
-//   }
-//
-//   cluster.on('exit', (worker, code, signal) => {
-//     console.log(`worker ${worker.id}/${worker.process.pid} is dead:, ${worker.isDead()}`);
-//     const newWorker = cluster.fork();
-//     console.log(`new worker ${newWorker.id}/${newWorker.process.pid}  is generated:`);
-//     // console.log(cluster.workers);
-//   });
-//
-// } else {
-//   // Worker processes have a http server.
-//   http.Server((req, res) => {
-//     res.writeHead(200);
-//     res.end('hello world\n');
-//     console.log('server: ', process.env.server);
-//     // Notify master about the request
-//     // process.send({ cmd: 'notifyRequest' });
-//     process.kill(process.pid);
-//   }).listen(8000);
-// }
+// app.listen(3000, () => console.log('Example app listening on port 3000!'));

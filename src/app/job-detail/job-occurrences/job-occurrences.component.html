@@ -4,27 +4,27 @@
       <div class="btn-toolbar justify-content-between ">
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusInitial" value="0">
-          <label class="form-check-label" for="statusInitial">Initial (3)</label>
+          <label class="form-check-label" for="statusInitial">Initial (<span class="text-info">3</span>)</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusReady" value="1">
-          <label class="form-check-label" for="statusReady">Ready (4)</label>
+          <label class="form-check-label" for="statusReady">Ready (<span class="text-info">4</span>)</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusRunning" value="2">
-          <label class="form-check-label" for="statusRunning">Running (2)</label>
+          <label class="form-check-label" for="statusRunning">Running (<span class="text-info">3</span>)</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusFinished" value="3">
-          <label class="form-check-label" for="statusFinished">Finished (2)</label>
+          <label class="form-check-label" for="statusFinished">Finished (<span class="text-success">2</span>)</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusFailed" value="4">
-          <label class="form-check-label" for="statusFailed">Failed (3)</label>
+          <label class="form-check-label" for="statusFailed">Failed (<span class="text-danger">1</span>)</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusCanceled" value="5">
-          <label class="form-check-label" for="statusCanceled">Canceled (1)</label>
+          <label class="form-check-label" for="statusCanceled">Canceled (<span class="text-danger">1</span>)</label>
         </div>
       </div>
 
@@ -34,14 +34,14 @@
             <label for="startFrom" class="col-sm-3 col-form-label col-form-label-sm">From:</label>
             <div class="col-sm-9">
               <input id="startFrom" name="startFrom" type="datetime-local" class="form-control form-control-sm"
-                     [readOnly]="readonly" [(date)]="startDate" (dateChange)="onChangeStartDate($event)">
+                     [(date)]="startDate" (dateChange)="onChangeStartDate($event)">
             </div>
           </div>
           <div class="form-group row">
             <label for="endAt" class="col-sm-3 col-form-label col-form-label-sm">To:</label>
             <div class="col-sm-9">
               <input id="endAt" name="endAt" type="datetime-local" class="form-control form-control-sm"
-                     [readOnly]="readonly" [(date)]="endDate" (dateChange)="onChangeEndDate($event)">
+                     [(date)]="endDate" (dateChange)="onChangeEndDate($event)">
             </div>
           </div>
         </div>

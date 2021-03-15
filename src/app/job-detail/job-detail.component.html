@@ -13,7 +13,8 @@
     <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Save" id="save" (click)="save()" [disabled]="readonly">
       <span class="fas fa-save"> Save</span>
     </button>
-    <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Schedule Job" id="schedule" (click)="schedule()" [disabled]="readonly">
+    <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Schedule Job" id="schedule"
+            (click)="schedule()" [disabled]="mainForm.get('status')?.value !== 0">
       <span class="fas fa-calendar-plus"> Schedule</span>
     </button>
   </div>

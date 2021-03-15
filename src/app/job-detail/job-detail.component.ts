@@ -266,6 +266,9 @@ export class JobDetailComponent implements OnInit {
   }
 
   schedule(): void {
-
+    this.jobService.scheduleJobs([this.mainForm.get('name')?.value]).subscribe( data => {
+      const messages = data as Message[];
+      messages.forEach( msg => this.messageService.add(msg));
+    });
   }
 }

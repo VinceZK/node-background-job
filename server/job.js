@@ -31,6 +31,7 @@ export default class Job {
           const jobEntry = {name: jobName};
           jobEntry.status = result.job[0].status;
           jobEntry.mode = result.job[0].mode;
+          jobEntry.INSTANCE_GUID = result.INSTANCE_GUID;
           jobEntry.description = {};
           if (result.r_text) {
             result.r_text.forEach( text => jobEntry.description[text.langu] = text.text);
@@ -207,6 +208,7 @@ export default class Job {
    */
   constructor(jobDefinition) {
     this.#checkJobName(jobDefinition.name);
+    this.INSTANCE_GUID = jobDefinition.INSTANCE_GUID || null;
     this.identity = jobDefinition.identity;
     this.#parseSteps(jobDefinition.steps);
     this.#parseStartCondition(jobDefinition.startCondition);
@@ -347,13 +349,13 @@ export default class Job {
       steps: [],
       startCondition: {},
       outputSetting: { ...this.outputSetting },
-      finishedOccurrences: 0,
-      failedOccurrences: 0,
-      canceledOccurrences: 0,
+      finishedOccurrences: jobDefinition.finishedOccurrences || 0,
+      failedOccurrences: jobDefinition.failedOccurrences || 0,
+      canceledOccurrences: jobDefinition.canceledOccurrences || 0,
       createdBy: jobDefinition.createdBy || 'DH001',
       createTime: jobDefinition.createTime || now,
       lastChangedBy: jobDefinition.lastChangedBy || 'DH001',
-      lastChangeTime: now,
+      lastChangeTime: jobDefinition.lastChangeTime || now,
       instance: this
     };
     JobOccurrence.assignSteps(this.steps, this.entry.steps);
@@ -452,6 +454,7 @@ export default class Job {
     switch (this.startCondition.mode) {
       case StartConditionEnum.immediately:
         const jobOcc = new JobOccurrence(this, this.startDateTime);
+        await jobOcc.setReady();
         if(process.env.USE_DB === 'true') {
           await jobOcc.persistJobOccurrence();
         }
@@ -467,6 +470,7 @@ export default class Job {
       default:
         // Do nothing
     }
+    return this.name;
   }
 
   async updateStatistics(occurrenceStatus, scheduledDateTime) {
@@ -551,7 +555,7 @@ export default class Job {
       if (process.env.USE_DB === 'true') {
         let changeInstance = {
           ENTITY_ID: 'job', INSTANCE_GUID: this.INSTANCE_GUID,
-          job: {action: 'change', status: status}
+          job: {action: 'update', status: status}
         };
         return new Promise( (resolve, reject) => {
           jor.Entity.changeInstance(changeInstance, (errors) => {
@@ -584,6 +588,7 @@ export default class Job {
     // Because the function setTimeout(maxTimeout) has the max waiting time of 2147483647ms, about 2147483s
     if (this.startDateTime.getTime() - Date.now() <= 2147483000) {
       const jobOcc = new JobOccurrence(this, this.startDateTime);
+      await jobOcc.setReady();
       if (process.env.USE_DB === 'true') {
         await jobOcc.persistJobOccurrence();
       }
@@ -607,6 +612,7 @@ export default class Job {
             // Start date could be in the past and the occurrences in the past are either canceled, or not run.
             // Thus these occurrences should be skipped.
             const jobOcc = new JobOccurrence(this, occurrenceTime);
+            await jobOcc.setReady();
             if (process.env.USE_DB === 'true') {
               await jobOcc.persistJobOccurrence();
             }

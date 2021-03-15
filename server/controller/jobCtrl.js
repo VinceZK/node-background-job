@@ -38,10 +38,7 @@ export default class JobCtrl{
   static scheduleJobs(req, res) {
     const jobNames = req.body;
     let iterator = jobNames.map( jobName => {
-      return async () => {
-        await Job.getJob(jobName).instance.scheduleOccurrences();
-        return jobName;
-      }
+      return Job.getJob(jobName).instance.scheduleOccurrences();
     });
     Promise.all(iterator)
       .then((jobNames)=>{

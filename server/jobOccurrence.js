@@ -98,7 +98,9 @@ export default class JobOccurrence {
     this.#cacheJobOccurrence();
     this.applicationLog = new ApplicationLog(this.uuid);
     this.originalConsole = console;
-    this.timerHandler = this.#setReady();
+    // this.#setReady()
+    //   .then(timerHandler => this.timerHandler = timerHandler)
+    //   .catch(error => { throw error; } );
   }
 
   /**
@@ -209,8 +211,9 @@ export default class JobOccurrence {
       }
       return new Promise((resolve, reject) => {
         jor.Entity.changeInstance(changeInstance, async (errors) => {
-          if (errors) { reject(errors); }
-          else {
+          if (errors) {
+            reject(errors);
+          } else {
             await this.#updateStatusInCache(status, now);
             resolve(0);
           }
@@ -234,15 +237,16 @@ export default class JobOccurrence {
     }
   }
 
-  async #setReady() {
+  async setReady() {
     await this.#updateStatus(OccurrenceStatusEnum.ready);
     let now = Date.now();
     let then = this.scheduledDateTime.getTime();
-    return setTimeout(() => {
+    this.timerHandler = setTimeout(() => {
       this.#runSteps(this.applicationLog).catch(e => {
         this.applicationLog.error(e.message);
       });
     }, (then < now? 0 : then - now));
+    return this.timerHandler;
   }
 
   async #runSteps(applicationLog) {
@@ -291,6 +295,8 @@ export default class JobOccurrence {
 
   async cancel() {
     await this.#updateStatus(OccurrenceStatusEnum.canceled);
-    clearTimeout(await this.timerHandler);
+    if (this.timerHandler) {
+      clearTimeout(this.timerHandler);
+    }
   }
 }
