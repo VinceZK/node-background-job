@@ -4,27 +4,39 @@
       <div class="btn-toolbar justify-content-between ">
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusInitial" value="0">
-          <label class="form-check-label" for="statusInitial">Initial (<span class="text-info">3</span>)</label>
+          <label class="form-check-label" [ngClass]="occStatusColors[0]" for="statusInitial">
+            {{occStatuses[0]}}(3)
+          </label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusReady" value="1">
-          <label class="form-check-label" for="statusReady">Ready (<span class="text-info">4</span>)</label>
+          <label class="form-check-label" [ngClass]="occStatusColors[1]" for="statusReady">
+            {{occStatuses[1]}}(4)
+          </label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusRunning" value="2">
-          <label class="form-check-label" for="statusRunning">Running (<span class="text-info">3</span>)</label>
+          <label class="form-check-label" [ngClass]="occStatusColors[2]" for="statusRunning">
+            {{occStatuses[2]}}(3)
+          </label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusFinished" value="3">
-          <label class="form-check-label" for="statusFinished">Finished (<span class="text-success">2</span>)</label>
+          <label class="form-check-label" [ngClass]="occStatusColors[3]" for="statusFinished">
+            {{occStatuses[3]}}(2)
+          </label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusFailed" value="4">
-          <label class="form-check-label" for="statusFailed">Failed (<span class="text-danger">1</span>)</label>
+          <label class="form-check-label" [ngClass]="occStatusColors[4]" for="statusFailed">
+            {{occStatuses[4]}}(1)
+          </label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="statusCanceled" value="5">
-          <label class="form-check-label" for="statusCanceled">Canceled (<span class="text-danger">1</span>)</label>
+          <label class="form-check-label" [ngClass]="occStatusColors[5]" for="statusCanceled">
+            {{occStatuses[5]}}(1)
+          </label>
         </div>
       </div>
 
@@ -51,18 +63,27 @@
         </div>
       </div>
     </div>
-<!--    <div class="list-group">-->
-<!--      <a *ngFor="let entityType of entityTypeList" routerLink="/model/entity-type/{{entityType.ENTITY_ID}}" routerLinkActive="active"-->
-<!--         (click)="onSelect(entityType)" class="list-group-item list-group-item-action flex-column align-items-start">-->
-<!--        <div class="d-flex w-100 justify-content-between">-->
-<!--          <h5 class="mb-1">{{entityType.ENTITY_ID}}</h5>-->
-<!--          <small>version: {{entityType.VERSION_NO}}</small>-->
-<!--        </div>-->
-<!--        <p class="mb-1">{{entityType.ENTITY_DESC}}</p>-->
-<!--        &lt;!&ndash;<small>created by: {{entityType.CREATE_BY}} @{{entityType.CREATE_TIME}}</small> <br/>&ndash;&gt;-->
-<!--        <small>last changed by: {{entityType.LAST_CHANGE_BY}} @{{entityType.LAST_CHANGE_TIME}}</small>-->
-<!--      </a>-->
-<!--    </div>-->
+
+    <div class="list-group">
+      <a *ngFor="let jobOcc of jobOccurrences" routerLink="/jobs/{{jobOcc.jobName}}/occurrences/{{jobOcc.uuid}}"
+         routerLinkActive="active" (click)="onSelect(jobOcc)"
+         class="list-group-item list-group-item-action flex-column align-items-start">
+        <h5 class="mb-1" [ngClass]="occStatusColors[jobOcc.status]">{{occStatuses[jobOcc.status]}}</h5>
+        <div class="row">
+          <small class="col-sm-6">Scheduled Date:</small>
+          <small class="col-sm-6">{{jobOcc.scheduledDateTime}}</small>
+        </div>
+        <div class="row">
+          <small class="col-sm-6">Actual Start Date:</small>
+          <small class="col-sm-6">{{jobOcc.actualStartDateTime}}</small>
+        </div>
+        <div class="row">
+          <small class="col-sm-6">End Date:</small>
+          <small class="col-sm-6">{{jobOcc.endDateTime}}</small>
+        </div>
+      </a>
+    </div>
+
   </div>
   <div [ngClass]="{'col-8': isSearchListShown, 'col-12': !isSearchListShown}">
     <router-outlet></router-outlet>

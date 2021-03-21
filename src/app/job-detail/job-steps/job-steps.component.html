@@ -59,8 +59,8 @@
             </button>
           </div>
         </div>
-        <div class="col-4 ml-2">
-          <p>{{currentJobProgramDesc}}</p>
+        <div class="col-4 mt-2 ml-2">
+          <p class="text-secondary">{{currentJobProgramDesc}}</p>
         </div>
         <div *ngIf="currentParamDefinitions" class="container-fluid dk-parameter-area">
           <app-job-parameters [parameterDefinitions]="currentParamDefinitions"

@@ -153,8 +153,14 @@ export default class JobCtrl{
     }
     if (req.query.status) {
       filter.status = [];
-      let statusS = Array.isArray(req.query.status)? req.query.status : [req.query.status];
-      statusS.forEach( s => filter.status.push(parseInt(s, 10)));
+      let statuses = Array.isArray(req.query.status)? req.query.status : [req.query.status];
+      statuses.forEach( s => filter.status.push(parseInt(s, 10)));
+    }
+    if (req.query.startDate) {
+      filter.startDate = req.query.startDate;
+    }
+    if (req.query.endDate) {
+      filter.endDate = req.query.endDate;
     }
     if (process.env.USE_DB === 'true') {
       JobOccurrence.getOccurrencesDB(filter)

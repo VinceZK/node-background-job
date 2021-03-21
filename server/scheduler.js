@@ -39,6 +39,7 @@ export default class Scheduler {
     console.log(`(node:${process.pid}) Recovering jobs and their occurrences...`);
     await this.#updateJobPID();
     const activeJobs = await this.#getActiveJobNames();
+    // TODO: Cancel those jobs(and their occurrences) that missed their schedule time
     for (const activeJob of activeJobs) {
       console.log(`(node:${process.pid}) Recovering Job ${activeJob.name} and its occurrences.`);
       try {
@@ -46,8 +47,8 @@ export default class Scheduler {
         const job = new Job(jobDefinition);
         if (activeJob.status === JobStatusEnum.scheduled) {
           const jobOccurrences = await this.#getActiveJobOccurrence(activeJob.name);
-          for (const jobOccScheduledDateTime of jobOccurrences) {
-            const jobOcc = new JobOccurrence(job, jobOccScheduledDateTime);
+          for (const jobOccurrence of jobOccurrences) {
+            const jobOcc = new JobOccurrence(job, jobOccurrence.scheduledDateTime, jobOccurrence.INSTANCE_GUID);
             await jobOcc.setReady();
           }
         }
@@ -94,7 +95,7 @@ export default class Scheduler {
 
   static async #getActiveJobOccurrence(jobName) {
     let now = new Date();
-    const selectSQL = 'select scheduledDateTime from jobOccurrence' +
+    const selectSQL = 'select scheduledDateTime, INSTANCE_GUID from jobOccurrence' +
       ' where jobName = ' +  EntityDB.pool.escape(jobName) +
       ' and scheduledDateTime >= ' +
       EntityDB.pool.escape(now.toISOString().slice(0, 19).replace('T', ' '));
@@ -103,8 +104,8 @@ export default class Scheduler {
         if (error) {
           reject(new JobError('GENERIC_ERROR', error));
         } else {
-          console.log(`(node:${process.pid}) Job ${jobName} has ${results.length} occurrences scheduled.`);
-          resolve(results.map( data => data.scheduledDateTime ));
+          console.log(`(node:${process.pid}) Job ${jobName} has ${results.length} occurrence(s) scheduled.`);
+          resolve(results);
         }
       })
     });

@@ -15,18 +15,17 @@ export default class JobOccurrence {
     return this.#occurrences.filter( occurrence => {
       return (!filter.uuid || filter.uuid === occurrence.uuid) &&
         (!filter.jobName || filter.jobName === occurrence.jobName) &&
-        (!filter.status || filter.status.includes(occurrence.status));
+        (!filter.status || filter.status.includes(occurrence.status)) &&
+        (!filter.startDate || filter.startDate <= occurrence.scheduledDateTime) &&
+        (!filter.endDate || filter.endDate >= occurrence.scheduledDateTime) ;
     });
   }
   static getOccurrencesDB(filter) {
     let queryObject = {ENTITY_ID: 'jobOccurrence', RELATION_ID: 'jobOccurrence'};
-    queryObject.PROJECTION = [
-      'uuid', 'jobName', 'scheduledDateTime', 'actualStartDateTime', 'endDateTime'
-    ];
     queryObject.FILTER = [];
     if (filter && filter.uuid) {
       queryObject.FILTER.push({
-        FIELD_NAME: 'uuid',
+        FIELD_NAME: 'INSTANCE_GUID',
         OPERATOR: 'EQ',
         LOW: filter.uuid
       });
@@ -47,6 +46,14 @@ export default class JobOccurrence {
         });
       });
     }
+    if (filter && (filter.startDate || filter.endDate)) {
+      queryObject.FILTER.push({
+        FIELD_NAME: 'scheduledDateTime',
+        OPERATOR: 'BT',
+        LOW: filter.startDate || '1970-01-01 00:00:00',
+        HIGH: filter.endDate || '9999-12-31 00:00:00'
+      });
+    }
     return new Promise((resolve, reject) => {
       jor.Query.run(queryObject, async (errs, rows) => {
         if (errs) {
@@ -61,8 +68,8 @@ export default class JobOccurrence {
     let lastScheduledTime = 0;
     this.#occurrences.forEach( occurrence => {
       if (occurrence.jobName === jobName) {
-        if(occurrence.scheduledDateTime > lastScheduledTime) {
-          lastScheduledTime = occurrence.scheduledDateTime;
+        if(new Date(occurrence.scheduledDateTime) > new Date(lastScheduledTime)) {
+          lastScheduledTime = occurrence.scheduledDateTime ;
         }
       }
     });
@@ -75,7 +82,8 @@ export default class JobOccurrence {
   }
   static assignStartCondition(source, target) {
     for (const [key, value] of Object.entries(source)) {
-      target[key] = typeof value === 'object'? JSON.parse(JSON.stringify(value)) : value;
+      target[key] = value instanceof Date?
+        value.toISOString().slice(0, 19).replace('T', ' ') : value;
     }
   }
 
@@ -83,8 +91,9 @@ export default class JobOccurrence {
    * Generate a job occurrence from a job definition and a scheduled date
    * @param job: Job
    * @param scheduledDateTime: Date()
+   * @param INSTANCE_GUID: in case using DB persistence, INSTANCE_GUID should be given during recovering
    */
-  constructor(job, scheduledDateTime) {
+  constructor(job, scheduledDateTime, INSTANCE_GUID) {
     this.uuid = uuid();
     this.jobName = job.name;
     this.description = { ...job.description };
@@ -94,13 +103,11 @@ export default class JobOccurrence {
     this.startCondition = {};
     JobOccurrence.assignStartCondition(job.startCondition, this.startCondition);
     this.outputSetting = { ...job.outputSetting };
-    this.scheduledDateTime = scheduledDateTime;
+    this.scheduledDateTime = new Date(scheduledDateTime);
     this.#cacheJobOccurrence();
     this.applicationLog = new ApplicationLog(this.uuid);
     this.originalConsole = console;
-    // this.#setReady()
-    //   .then(timerHandler => this.timerHandler = timerHandler)
-    //   .catch(error => { throw error; } );
+    this.INSTANCE_GUID = INSTANCE_GUID;
   }
 
   /**
@@ -116,7 +123,7 @@ export default class JobOccurrence {
       status: OccurrenceStatusEnum.initial,
       steps: [],
       startCondition: {},
-      scheduledDateTime: new Date(this.scheduledDateTime),
+      scheduledDateTime: this.scheduledDateTime.toISOString().slice(0, 19).replace('T', ' '),
       actualStartDateTime: 0,
       endDateTime: 0,
       applicationLog: [],
@@ -131,7 +138,7 @@ export default class JobOccurrence {
     const occInstance = {ENTITY_ID: 'jobOccurrence'};
     occInstance.jobOccurrence = [
       { jobName: this.entry.jobName, status: this.entry.status,
-        scheduledDateTime: this.entry.scheduledDateTime.toISOString().slice(0, 19).replace('T', ' '),
+        scheduledDateTime: this.entry.scheduledDateTime,
         actualStartDateTime: null,
         endDateTime: null
       }];
@@ -145,16 +152,10 @@ export default class JobOccurrence {
     });
     occInstance.r_start_condition = [
       { key: uuid(), mode: this.entry.startCondition.mode,
-        specificTime: this.entry.startCondition.specificTime
-          ? this.entry.startCondition.specificTime.slice(0, 19).replace('T', ' ')
-          : null,
+        specificTime: this.entry.startCondition.specificTime || null,
         cronString: this.entry.startCondition.cronString,
-        cronCurrentDate: this.entry.startCondition.cronCurrentDate
-          ? this.entry.startCondition.cronCurrentDate.slice(0, 19).replace('T', ' ')
-          : null,
-        cronEndDate: this.entry.startCondition.cronEndDate
-          ? this.entry.startCondition.cronEndDate.slice(0, 19).replace('T', ' ')
-          : null
+        cronCurrentDate: this.entry.startCondition.cronCurrentDate || null,
+        cronEndDate: this.entry.startCondition.cronEndDate || null
       }
     ];
     if (this.entry.startCondition.tz) { // null is not in the data domain of timezone
@@ -173,15 +174,15 @@ export default class JobOccurrence {
         }]
     }];
     return new Promise( (resolve, reject) => {
-      jor.Entity.createInstance(occInstance, (errors, results) => {
+      jor.Entity.createInstance(occInstance, (errors, result) => {
         if (errors) {
           // Remove the cached entry since the persistent is failed
           const index = JobOccurrence.#occurrences.findIndex( occ => occ.uuid === this.uuid);
           JobOccurrence.#occurrences.splice(index, 1);
           reject(errors);
         } else {
-          this.INSTANCE_GUID = results.INSTANCE_GUID;
-          resolve(results);
+          this.INSTANCE_GUID = result.INSTANCE_GUID;
+          resolve(result);
         }
       });
     });
@@ -201,13 +202,13 @@ export default class JobOccurrence {
     if (process.env.USE_DB === 'true') {
       let changeInstance = {
         ENTITY_ID: 'jobOccurrence', INSTANCE_GUID: this.INSTANCE_GUID,
-        job: { action: 'change', status: status }
+        jobOccurrence: { action: 'update', status: status }
       };
       if (status === OccurrenceStatusEnum.running) {
-        changeInstance.job.actualStartDateTime = now.toISOString().slice(0, 19).replace('T', ' ');
+        changeInstance.jobOccurrence.actualStartDateTime = now.toISOString().slice(0, 19).replace('T', ' ');
       }
       if (status >= OccurrenceStatusEnum.finished) {
-        changeInstance.job.endDateTime = now.toISOString().slice(0, 19).replace('T', ' ');
+        changeInstance.jobOccurrence.endDateTime = now.toISOString().slice(0, 19).replace('T', ' ');
       }
       return new Promise((resolve, reject) => {
         jor.Entity.changeInstance(changeInstance, async (errors) => {

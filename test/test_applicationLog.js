@@ -4,7 +4,7 @@ import JobOccurrence from "../server/jobOccurrence.js";
 import ApplicationLog from "../server/applicationLog.js";
 
 describe('Application log class tests',  () => {
-  before('Register a test job program and a test job',  () => {
+  before('Register a test job program and a test job', () => {
     JobProgram.registerJobProgram(
       'JobProgram',
       {
@@ -21,19 +21,7 @@ describe('Application log class tests',  () => {
             }
           },
         }
-
       });
-    let specificTime = new Date();
-    specificTime.setSeconds(specificTime.getSeconds() + 1);
-    const job = new Job(  {
-      name: 'applicationLog',
-      description: 'job description',
-      steps: [
-        {program: 'JobProgram', parameters: {PARAM1: 'gogo1'}}
-      ],
-      startCondition: { mode: 1, specificTime: specificTime.toString() }
-    });
-    job.scheduleOccurrences();
   });
 
   it('should fail', () => {
@@ -45,7 +33,18 @@ describe('Application log class tests',  () => {
     }
   });
 
-  it('should success', () => {
+  it('should success', async () => {
+    let specificTime = new Date();
+    specificTime.setSeconds(specificTime.getSeconds() + 1);
+    const job = new Job(  {
+      name: 'applicationLog',
+      description: 'job description',
+      steps: [
+        {program: 'JobProgram', parameters: {PARAM1: 'gogo1'}}
+      ],
+      startCondition: { mode: 1, specificTime: specificTime }
+    });
+    await job.scheduleOccurrences();
     const jobOccurrenceEntry = JobOccurrence.getOccurrences({jobName: 'applicationLog'})[0];
     const appLog = jobOccurrenceEntry.instance.applicationLog;
     appLog.log('Log level: %s', 'info->general');

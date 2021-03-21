@@ -191,6 +191,8 @@ export default class JobProgram {
   /**
    * Check the job parameters
    * Validate the parameters provided by the invoker
+   * @param name: job program name
+   * @param parameters: name value pairs
    */
   static checkParameters(name, parameters) {
     const jobDefinition = JobProgram.getJobProgramDefinition(name);
@@ -199,18 +201,22 @@ export default class JobProgram {
     }
     const paramMap = {};
     for (const groupValue of Object.values(jobDefinition.parameterDefinitions)) {
-      const parameters = groupValue.parameters;
-      for (const [paramName, paramDefinition] of Object.entries(parameters)) {
+      const paramDefinitions = groupValue.parameters;
+      for (const [paramName, paramDefinition] of Object.entries(paramDefinitions)) {
         paramMap[paramName] = paramDefinition;
       }
     }
+
+    let parametersInJSON;
     if (typeof parameters === 'string') {
-      parameters = JSON.parse(parameters);
-      if (typeof parameters === 'string') {
-        parameters = JSON.parse(parameters);
+      parametersInJSON = JSON.parse(parameters);
+      if (typeof parametersInJSON === 'string') {
+        parametersInJSON = JSON.parse(parametersInJSON);
       }
+    } else {
+      parametersInJSON = parameters;
     }
-    for (const [key, value] of Object.entries(parameters)) {
+    for (const [key, value] of Object.entries(parametersInJSON)) {
       let paramDefinition = paramMap[key];
       if (!paramDefinition) {
         throw new JobProgramError('INVALID_PARAMETER', key);

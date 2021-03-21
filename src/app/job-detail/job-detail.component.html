@@ -4,17 +4,18 @@
   </div>
 
   <div class="flex-row-reverse">
-    <button *ngIf="!isNewMode"
+    <button *ngIf="!isNewMode && mainForm?.get('status')?.value === 0"
             class="btn btn-sm btn-outline-primary mr-2" type="button" title="Edit/Display" id="editDisplay"
             (click)="switchEditDisplay()">
       <span *ngIf="readonly" class="fas fa-edit"> Edit</span>
       <span *ngIf="!readonly" class="fas fa-glasses"> Display</span>
     </button>
-    <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Save" id="save" (click)="save()" [disabled]="readonly">
+    <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Save" id="save"
+            (click)="save()" [disabled]="readonly">
       <span class="fas fa-save"> Save</span>
     </button>
     <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Schedule Job" id="schedule"
-            (click)="schedule()" [disabled]="mainForm.get('status')?.value !== 0">
+            (click)="schedule()" [disabled]="mainForm?.get('status')?.value !== 0">
       <span class="fas fa-calendar-plus"> Schedule</span>
     </button>
   </div>
@@ -25,6 +26,13 @@
 </div>
 
 <div *ngIf="mainForm" class="ml-2">
+
+  <div *ngIf="workInProgress" class="overlay">
+    <div class="spinner-border" role="status">
+<!--      <span class="sr-only">Processing...</span>-->
+    </div>
+  </div>
+
   <div class="mt-2 ml-1 row">
     <dk-app-attribute-form2 class="col-md-6 col-lg-4"
                             [attributeControl]="getJobAttrCtrlFromID('name')"

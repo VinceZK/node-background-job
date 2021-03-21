@@ -71,7 +71,12 @@ export class JobParametersComponent implements OnInit, OnChanges {
         const paramValueStr = this.currentJobStep.get('parameters')?.value;
         let paramValues = {};
         try {
-          if (paramValueStr) { paramValues = JSON.parse(paramValueStr); }
+          if (paramValueStr) {
+            paramValues = JSON.parse(paramValueStr);
+            if (typeof paramValues === 'string') {
+              paramValues = JSON.parse(paramValues);
+            }
+          }
         } catch (e) {
           this.messageService.reportMessage('JOB', 'GENERAL', 'E', e.message);
         }

@@ -2,6 +2,7 @@ import Job from '../server/job.js';
 import JobProgram from "../server/jobProgram.js";
 import JobOccurrence from "../server/jobOccurrence.js";
 import {JobStatusEnum, OccurrenceStatusEnum} from "../server/constants.js";
+import CronParser from "cron-parser";
 
 describe('Job Class tests',  () => {
   before('Register a test job program and a test job',  () => {
@@ -216,7 +217,7 @@ describe('Job Class tests',  () => {
           steps: {program: 'JobProgram'},
           startCondition: {
             mode: 2,
-            cronEndDate: then.toString()
+            cronEndDate: then
           }
         });
         (0).should.equal(1);
@@ -338,7 +339,7 @@ describe('Job Class tests',  () => {
             {program: 'JobProgram', parameters: {param1: 'gogo1'}},
             {program: 'JobProgram', parameters: {param1: 'gogo2'}}
           ],
-          startCondition: { mode: 1, specificTime: jobStart.toString()}
+          startCondition: { mode: 1, specificTime: jobStart}
         });
         await job.scheduleOccurrences(now, occEnd);
       } catch (e) {
@@ -520,4 +521,25 @@ describe('Job Class tests',  () => {
       })
     });
   });
+
+  describe.only('Cron test', () => {
+    let now = new Date();
+    let end = new Date();
+    end.setDate(now.getDate() + 30);
+    console.log('from', now.toISOString(), 'to', end.toISOString());
+    const cronOption = {
+      currentDate: now,
+      endDate: end,
+      tz: 'UTC'
+    };
+    let interval = CronParser.parseExpression('0 0 12 10,20,30 * *', cronOption);
+    while (true) {
+      try {
+        let occurrenceTime = interval.next();
+        console.log(occurrenceTime.toISOString());
+      } catch (e) {
+        break;
+      }
+    }
+  })
 });

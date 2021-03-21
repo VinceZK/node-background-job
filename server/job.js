@@ -298,7 +298,8 @@ export default class Job {
         if (!this.startCondition.specificTime) {
           throw new JobError('MISSING_SPECIFIC_TIME');
         }
-        this.startDateTime = new Date(this.startCondition.specificTime);
+        this.startDateTime = this.startCondition.specificTime instanceof Date ?
+          this.startCondition.specificTime : new Date(this.startCondition.specificTime + ' UTC');
         if (isNaN(this.startDateTime)) {
           throw new JobError('INVALID_DATE_STRING', this.startCondition.specificTime);
         }
@@ -312,13 +313,15 @@ export default class Job {
         let currentDate = null;
         let endDate = null;
         if (this.startCondition.cronCurrentDate) {
-          currentDate = new Date(this.startCondition.cronCurrentDate);
+          currentDate = this.startCondition.cronCurrentDate instanceof Date ?
+            this.startCondition.cronCurrentDate : new Date(this.startCondition.cronCurrentDate + ' UTC');
           if (isNaN(currentDate.getTime())) {
             throw new JobError('INVALID_DATE_STRING', this.startCondition.cronCurrentDate);
           }
         }
         if (this.startCondition.cronEndDate) {
-          endDate = new Date(this.startCondition.cronEndDate);
+          endDate = this.startCondition.cronEndDate instanceof Date ?
+            this.startCondition.cronEndDate: new Date(this.startCondition.cronEndDate + ' UTC');
           if (isNaN(endDate.getTime())) {
             throw new JobError('INVALID_DATE_STRING', this.startCondition.cronEndDate);
           }
@@ -344,7 +347,7 @@ export default class Job {
     this.entry = {
       name: this.name,
       description: this.#deriveDescription(jobDefinition.description),
-      status: JobStatusEnum.initial,
+      status: jobDefinition.status || JobStatusEnum.initial,
       identity: { ...this.identity },
       steps: [],
       startCondition: {},
@@ -426,16 +429,10 @@ export default class Job {
     });
     jobInstance.r_start_condition = [
       { key: uuid(), mode: this.entry.startCondition.mode,
-        specificTime: this.entry.startCondition.specificTime
-          ? this.entry.startCondition.specificTime.slice(0, 19).replace('T', ' ')
-          : null,
+        specificTime: this.entry.startCondition.specificTime || null,
         cronString: this.entry.startCondition.cronString,
-        cronCurrentDate: this.entry.startCondition.cronCurrentDate
-          ? this.entry.startCondition.cronCurrentDate.slice(0, 19).replace('T', ' ')
-          : null,
-        cronEndDate: this.entry.startCondition.cronEndDate
-          ? this.entry.startCondition.cronEndDate.slice(0, 19).replace('T', ' ')
-          : null
+        cronCurrentDate: this.entry.startCondition.cronCurrentDate || null,
+        cronEndDate: this.entry.startCondition.cronEndDate || null
       }
     ];
     if (this.entry.startCondition.tz) { // null is not in the data domain of timezone
@@ -454,10 +451,10 @@ export default class Job {
     switch (this.startCondition.mode) {
       case StartConditionEnum.immediately:
         const jobOcc = new JobOccurrence(this, this.startDateTime);
-        await jobOcc.setReady();
         if(process.env.USE_DB === 'true') {
           await jobOcc.persistJobOccurrence();
         }
+        await jobOcc.setReady();
         break;
       case StartConditionEnum.specificTime:
         await this.#scheduleSpecificTime(endDateTime);
@@ -588,10 +585,10 @@ export default class Job {
     // Because the function setTimeout(maxTimeout) has the max waiting time of 2147483647ms, about 2147483s
     if (this.startDateTime.getTime() - Date.now() <= 2147483000) {
       const jobOcc = new JobOccurrence(this, this.startDateTime);
-      await jobOcc.setReady();
       if (process.env.USE_DB === 'true') {
         await jobOcc.persistJobOccurrence();
       }
+      await jobOcc.setReady();
     }
   }
   /**
@@ -612,10 +609,10 @@ export default class Job {
             // Start date could be in the past and the occurrences in the past are either canceled, or not run.
             // Thus these occurrences should be skipped.
             const jobOcc = new JobOccurrence(this, occurrenceTime);
-            await jobOcc.setReady();
             if (process.env.USE_DB === 'true') {
               await jobOcc.persistJobOccurrence();
             }
+            await jobOcc.setReady();
           }
         } catch (e) {
           break;
@@ -641,8 +638,7 @@ export default class Job {
     // Even the last occurrence is canceled, we won't re-schedule it.
     // Only to find the next occurrence of the last scheduled one.
     let lastScheduledOccurrence = JobOccurrence.getLastScheduledOccurrence(this.name);
-    if (lastScheduledOccurrence) { start = lastScheduledOccurrence.scheduledDateTime; }
-
+    if (lastScheduledOccurrence) { start = new Date(lastScheduledOccurrence.scheduledDateTime + ' UTC');}
     let end = endDateTime? endDateTime : this.endDateTime;
     if (this.endDateTime && end > this.endDateTime) {
       end = this.endDateTime;
@@ -663,7 +659,7 @@ export default class Job {
     return {
       currentDate: start,
       endDate: end,
-      tz: this.startCondition.tz
+      tz: this.startCondition.tz || 'UTC'
     }
   }
 

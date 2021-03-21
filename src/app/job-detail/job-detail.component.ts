@@ -34,6 +34,7 @@ export class JobDetailComponent implements OnInit {
   originalValue!: Job;
   changedValue!: Job;
   tabStrip = 3;
+  workInProgress = false;
 
   @ViewChild(JobStartConditionComponent)
   jobStartConditionComponent!: JobStartConditionComponent;
@@ -215,24 +216,30 @@ export class JobDetailComponent implements OnInit {
 
   save(): void {
     this.messageService.clearMessages();
+    this.workInProgress = true;
     if (this._composeChanges()) {
       this.jobService.saveJob(this.isNewMode, this.changedValue).subscribe( data => {
         const messages = data as Message[];
         messages.forEach( msg => this.messageService.add(msg));
         if (messages[0].msgName === 'JOB_IS_SAVED') {
-          // tslint:disable-next-line:no-shadowed-variable
-          this.jobService.getJob(this.mainForm.get('name')?.value).subscribe(data => {
-            if (data instanceof Message) {
-              this.messageService.add(data);
-            } else {
-              this._switch2DisplayMode();
-              this.originalValue = data as Job;
-              this.mainForm.reset(this.originalValue);
-            }
-          });
+          this._retrieveUpdatedValue();
         }
+        this.workInProgress = false;
       });
     }
+  }
+
+  schedule(): void {
+    this.messageService.clearMessages();
+    this.workInProgress = true;
+    this.jobService.scheduleJobs([this.mainForm.get('name')?.value]).subscribe( data => {
+      const messages = data as Message[];
+      messages.forEach( msg => this.messageService.add(msg));
+      if (messages[0].msgName === 'JOB_IS_SCHEDULED') {
+        this._retrieveUpdatedValue();
+      }
+      this.workInProgress = false;
+    });
   }
 
   _composeChanges(): boolean {
@@ -257,18 +264,24 @@ export class JobDetailComponent implements OnInit {
     return true;
   }
 
+  _retrieveUpdatedValue(): void {
+    // tslint:disable-next-line:no-shadowed-variable
+    this.jobService.getJob(this.mainForm.get('name')?.value).subscribe(data => {
+      if (data instanceof Message) {
+        this.messageService.add(data);
+      } else {
+        this._switch2DisplayMode();
+        this.originalValue = data as Job;
+        this.mainForm.reset(this.originalValue);
+      }
+    });
+  }
+
   canDeactivate(): Observable<boolean> | boolean {
     if (this.isNewMode || (this.mainForm && this.mainForm.dirty)) {
       return this.dialogService.confirm('Discard changes?');
     } else {
       return true;
     }
-  }
-
-  schedule(): void {
-    this.jobService.scheduleJobs([this.mainForm.get('name')?.value]).subscribe( data => {
-      const messages = data as Message[];
-      messages.forEach( msg => this.messageService.add(msg));
-    });
   }
 }
