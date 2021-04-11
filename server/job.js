@@ -17,6 +17,7 @@ export default class Job {
   static getJob(jobName) {
     return this.#Jobs.find(job => job.name === jobName);
   }
+
   /**
    * Get a job entry from the DB
    * @param jobName
@@ -59,26 +60,43 @@ export default class Job {
     });
   }
 
+  /**
+   * Change a job from a job definition
+   * @param changedJobDefinition
+   * @returns {Promise<*>}
+   */
   static async changeJob(changedJobDefinition) {
     const oldJobIndex = this.#Jobs.findIndex( job => job.name === changedJobDefinition.name);
     if (oldJobIndex === -1) {
       throw new JobError('JOB_NOT_EXIST');
     }
     const oldJobEntry = this.#Jobs[oldJobIndex];
-    if (oldJobEntry.status === JobStatusEnum.scheduled || oldJobEntry.status === JobStatusEnum.completed ) {
+    if (oldJobEntry.status === JobStatusEnum.completed ) {
       throw new JobError('JOB_CANNOT_BE_CHANGED', oldJobEntry.status);
+    }
+    const oldJobGUID = oldJobEntry.instance.INSTANCE_GUID;
+    if (oldJobEntry.status === JobStatusEnum.scheduled) {
+      changedJobDefinition.status = JobStatusEnum.scheduled;
+      await oldJobEntry.instance.cancel();
+      changedJobDefinition.finishedOccurrences = oldJobEntry.finishedOccurrences;
+      changedJobDefinition.failedOccurrences = oldJobEntry.failedOccurrences;
+      changedJobDefinition.canceledOccurrences = oldJobEntry.canceledOccurrences;
     }
 
     this.#Jobs.splice(oldJobIndex, 1); // Delete the old job entry
     changedJobDefinition.createTime = oldJobEntry.createTime;
     changedJobDefinition.createdBy = oldJobEntry.createdBy;
     const newJob = new Job(changedJobDefinition);
-    newJob.INSTANCE_GUID = oldJobEntry.instance.INSTANCE_GUID;
+    newJob.INSTANCE_GUID = oldJobGUID;
+
     if (process.env.USE_DB !== 'true') {
       return changedJobDefinition;
     }
     try {
       await newJob.changeJobDB();
+      if (oldJobEntry.status === JobStatusEnum.completed) {
+        await newJob.scheduleOccurrences();
+      }
       return changedJobDefinition;
     } catch (errors) {
       const newJobIndex = this.#Jobs.findIndex( job => job.name === changedJobDefinition.name);
@@ -87,6 +105,7 @@ export default class Job {
       throw errors ;
     }
   }
+
   /**
    * Get jobs from the cache
    * @param filter
@@ -104,6 +123,7 @@ export default class Job {
         (!filter.program || job.steps.findIndex( step => step.program === filter.program));
     });
   }
+
   /**
    * Get jobs from the DB
    * @returns {Promise<void>}
@@ -167,6 +187,7 @@ export default class Job {
       });
     });
   }
+
   /**
    * Check the given timespan from start to end
    * @param start
@@ -231,6 +252,7 @@ export default class Job {
     }
     return typeof description === 'string'? { DEFAULT: description } : description;
   }
+
   /**
    * Parse the steps
    * @param steps:
@@ -259,6 +281,7 @@ export default class Job {
       }
     })
   }
+
   /**
    * Parse the start condition
    * @type: startCondition: {
@@ -336,6 +359,7 @@ export default class Job {
         throw new JobError('UNSUPPORTED_JOB_MODE');
     }
   }
+
   /**
    * Cache the job so that it can be traced and monitored.
    * Once the job is finished or canceled, the instance should be recycled by GC.
@@ -386,6 +410,10 @@ export default class Job {
     });
   }
 
+  /**
+   * Change a job in DB
+   * @returns {Promise<unknown>}
+   */
   async changeJobDB() {
     return new Promise( (resolve, reject) => {
       jor.Entity.overwriteInstance(this.#convert2JorInstance(),  (errors) => {
@@ -442,62 +470,88 @@ export default class Job {
       jobInstance.r_output_setting = [{ ...this.outputSetting }];
       jobInstance.r_output_setting[0].key = uuid();
     }
-    // jobInstance.relationships = [];
     return jobInstance;
   }
 
-  async scheduleOccurrences(startDateTime, endDateTime) {
+  /**
+   * Schedule the occurrence(s), which will:
+   * 1. set the status to Ready;
+   * 2. generate the occurrence(s) from now to the given endDateTime
+   * @param endDateTime
+   * @returns {Promise<{jobName: string, numOcc: number}>}
+   */
+  async scheduleOccurrences(endDateTime) {
     await this.#setStatus(JobStatusEnum.scheduled);
+    let numOcc = 0;
     switch (this.startCondition.mode) {
       case StartConditionEnum.immediately:
+        this.startDateTime = this.endDateTime = new Date();
         const jobOcc = new JobOccurrence(this, this.startDateTime);
         if(process.env.USE_DB === 'true') {
           await jobOcc.persistJobOccurrence();
         }
         await jobOcc.setReady();
+        numOcc = 1;
         break;
       case StartConditionEnum.specificTime:
         await this.#scheduleSpecificTime(endDateTime);
+        numOcc = 1;
         break;
       case StartConditionEnum.recurrently:
-        await this.#scheduleRecurrently(endDateTime);
+        numOcc = await this.#scheduleRecurrently(endDateTime);
         break;
       case StartConditionEnum.onEvent:
         break;
       default:
         // Do nothing
     }
-    return this.name;
+    return {
+      jobName: this.name,
+      numOcc: numOcc
+    };
   }
 
+  /**
+   * Update the statistics of the job after the occurrence is scheduled and running.
+   * @param occurrenceStatus: the current occurrence's status
+   * @param scheduledDateTime: after the datetime, check whether there is next occurrence(s)
+   * @returns {Promise<void>}
+   */
   async updateStatistics(occurrenceStatus, scheduledDateTime) {
     if (process.env.USE_DB === 'true') {
-      let changeInstance = {
-        ENTITY_ID: 'job', INSTANCE_GUID: this.INSTANCE_GUID,
-        job: {
-          action: 'change',
-          finishedOccurrences: this.entry.finishedOccurrences,
-          failedOccurrences: this.entry.failedOccurrences,
-          canceledOccurrences: this.entry.canceledOccurrences}
-      };
-      this.#setOccurrenceStatistics(occurrenceStatus, changeInstance.job);
-      return new Promise( (resolve, reject) => {
-        jor.Entity.changeInstance(changeInstance, (errors) => {
-          if (errors) {
-            reject(errors);
-          } else {
-            this.#setOccurrenceStatistics(occurrenceStatus, this.entry);
-            resolve(0);
-          }
-        });
-      });
-    } else {
-      this.#setOccurrenceStatistics(occurrenceStatus, this.entry);
+      await this.#updateStatisticsDB(occurrenceStatus);
     }
+    this.#setOccurrenceStatistics(occurrenceStatus, this.entry);
     if (!this.hasNextOccurrence(scheduledDateTime)) {
       await this.#setStatus(JobStatusEnum.completed);
       this.entry.instance = null;
     }
+  }
+
+  /**
+   * Update the job statistics in DB
+   * @param occurrenceStatus
+   * @returns {Promise<unknown>}
+   */
+  async #updateStatisticsDB(occurrenceStatus) {
+    const changeInstance = {
+      ENTITY_ID: 'job', INSTANCE_GUID: this.INSTANCE_GUID,
+      job: {
+        action: 'update',
+        finishedOccurrences: this.entry.finishedOccurrences,
+        failedOccurrences: this.entry.failedOccurrences,
+        canceledOccurrences: this.entry.canceledOccurrences}
+    };
+    this.#setOccurrenceStatistics(occurrenceStatus, changeInstance.job);
+    return new Promise( (resolve, reject) => {
+      jor.Entity.changeInstance(changeInstance, (errors) => {
+        if (errors) {
+          reject(errors);
+        } else {
+          resolve(0);
+        }
+      });
+    });
   }
 
   #setOccurrenceStatistics(occurrenceStatus, entry) {
@@ -516,6 +570,11 @@ export default class Job {
     }
   }
 
+  /**
+   * Check whether there is a next occurrence after the given scheduled datetime
+   * @param scheduledDateTime
+   * @returns {boolean}
+   */
   hasNextOccurrence(scheduledDateTime) {
     switch (this.startCondition.mode) {
       case StartConditionEnum.immediately:
@@ -535,6 +594,10 @@ export default class Job {
     }
   }
 
+  /**
+   * Cancel all the scheduled occurrences and then set the job to complete
+   * @returns {Promise<void>}
+   */
   async cancel() {
     const occurrences = JobOccurrence.getOccurrences({
       jobName: this.name,
@@ -542,39 +605,49 @@ export default class Job {
     for (const occurrence of occurrences) {
       await occurrence.instance.cancel();
     }
-    await this.#setStatus(JobStatusEnum.canceled);
+    await this.#setStatus(JobStatusEnum.completed);
     this.entry.instance = null;
   }
 
+  /**
+   * Set the job status in both Cache and DB
+   * @param status
+   * @returns {Promise<void>}
+   */
   async #setStatus(status) {
-    if ((status === JobStatusEnum.scheduled && this.entry.status === JobStatusEnum.canceled) || //Cancel-->Scheduled
-        (status >= this.entry.status && this.entry.status < JobStatusEnum.completed)) {
+    if (status >= this.entry.status) {
       if (process.env.USE_DB === 'true') {
-        let changeInstance = {
-          ENTITY_ID: 'job', INSTANCE_GUID: this.INSTANCE_GUID,
-          job: {action: 'update', status: status}
-        };
-        return new Promise( (resolve, reject) => {
-          jor.Entity.changeInstance(changeInstance, (errors) => {
-            if (errors) {
-              reject(errors);
-            } else {
-              this.entry.status = status;
-              resolve(0);
-            }
-          });
-        });
-      } else {
-        this.entry.status = status;
+        await this.#setStatusDB(status);
       }
+      this.entry.status = status;
     } else {
       throw new JobError('INCORRECT_JOB_STATUS_CHANGE', this.entry.status, status);
     }
   }
 
   /**
-   * Given the timespan from now to the endDateTime,
-   * check if the specific job start time is before the endDateTime
+   * Set the job status in DB
+   * @param status
+   * @returns {Promise<void>}
+   */
+  async #setStatusDB(status) {
+    const changeInstance = {
+      ENTITY_ID: 'job', INSTANCE_GUID: this.INSTANCE_GUID,
+      job: {action: 'update', status: status}
+    };
+    return new Promise( (resolve, reject) => {
+      jor.Entity.changeInstance(changeInstance, (errors) => {
+        if (errors) {
+          reject(errors);
+        } else {
+          resolve(0);
+        }
+      });
+    });
+  }
+
+  /**
+   * Given the endDateTime, schedule the job at the specific time, which should be before the endDateTime
    * @param endDateTime
    */
   async #scheduleSpecificTime(endDateTime) {
@@ -591,6 +664,7 @@ export default class Job {
       await jobOcc.setReady();
     }
   }
+
   /**
    * Schedule occurrences from a recurrence job with a given endDateTime.
    * It always starts from the last scheduled occurrence.
@@ -600,6 +674,7 @@ export default class Job {
   async #scheduleRecurrently(endDateTime) {
     const cronOption = this.generateCronOption(endDateTime);
     let now = new Date();
+    let numOcc = 0;
     try {
       let interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);
       while (true) {
@@ -613,11 +688,13 @@ export default class Job {
               await jobOcc.persistJobOccurrence();
             }
             await jobOcc.setReady();
+            numOcc++;
           }
         } catch (e) {
           break;
         }
       }
+      return (numOcc);
     } catch (err) {
       throw new JobError('GENERIC_ERROR', err);
     }
@@ -662,5 +739,4 @@ export default class Job {
       tz: this.startCondition.tz || 'UTC'
     }
   }
-
 }

@@ -1,0 +1,16 @@
+<div *ngIf="jobOccurrence">
+  <h5 class="mb-1" [ngClass]="occStatusColors[jobOccurrence.status]">{{occStatuses[jobOccurrence.status]}}</h5>
+  <div class="row">
+    <small class="col-sm-6">Scheduled Date:</small>
+    <small class="col-sm-6">{{jobOccurrence.scheduledDateTime}}</small>
+  </div>
+  <div class="row">
+    <small class="col-sm-6">Actual Start Date:</small>
+    <small class="col-sm-6">{{jobOccurrence.actualStartDateTime}}</small>
+  </div>
+  <div class="row">
+    <small class="col-sm-6">End Date:</small>
+    <small class="col-sm-6">{{jobOccurrence.endDateTime}}</small>
+  </div>
+</div>
+

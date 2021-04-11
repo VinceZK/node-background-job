@@ -1,4 +1,4 @@
-import {JobStatusEnum} from "./constants.js";
+import {JobStatusEnum, OccurrenceStatusEnum} from "./constants.js";
 import Job from "./job.js";
 import JobOccurrence from "./jobOccurrence.js";
 import {JobError} from "./jobError.js";
@@ -25,13 +25,12 @@ export default class Scheduler {
 
   static async on() {
     await this.#recoverActiveJobs();
-    let now = new Date();
     let end = new Date();
-    end.setHours(now.getHours() + this.#intervalHrs);
+    end.setHours(end.getHours() + this.#intervalHrs);
     // The persisted occurrences may already missed. For example, restarting the server after the '#intervalHrs'.
     // Thus we still need to schedule for the span from now to the end.
     // The occurrences in the overlap span won't be rescheduled.
-    this.#scheduleJobOccurrences(now, end);
+    this.#scheduleJobOccurrences(end);
     this.timerHandler = setInterval(() => this.#scheduleJobOccurrences(), this.#intervalHrs * 3600000);
   }
 
@@ -39,22 +38,34 @@ export default class Scheduler {
     console.log(`(node:${process.pid}) Recovering jobs and their occurrences...`);
     await this.#updateJobPID();
     const activeJobs = await this.#getActiveJobNames();
-    // TODO: Cancel those jobs(and their occurrences) that missed their schedule time
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     for (const activeJob of activeJobs) {
       console.log(`(node:${process.pid}) Recovering Job ${activeJob.name} and its occurrences.`);
       try {
         const jobDefinition = await Job.getJobDB(activeJob.name);
         const job = new Job(jobDefinition);
         if (activeJob.status === JobStatusEnum.scheduled) {
-          const jobOccurrences = await this.#getActiveJobOccurrence(activeJob.name);
+          const jobOccurrences = await this.#getActiveJobOccurrence(activeJob.name, now);
           for (const jobOccurrence of jobOccurrences) {
             const jobOcc = new JobOccurrence(job, jobOccurrence.scheduledDateTime, jobOccurrence.INSTANCE_GUID);
             await jobOcc.setReady();
           }
+          const canceledOccNum = await this.#cancelPassedOccurrences(activeJob.name, now);
+          if (canceledOccNum > 0) {
+            await this.#updateCanceledOccNum(activeJob.name, now, canceledOccNum, false);
+          }
         }
         console.info(`(node:${process.pid}) Job ${activeJob.name} is recovered.`);
       } catch (error) {
-        console.error(`(node:${process.pid})`, error.message || error);
+        if (error.message.msgName === 'SCHEDULED_DATE_PAST' ||
+            error.message.msgName === 'TIMESPAN_IS_PAST') {
+          const canceledOccNum = await this.#cancelPassedOccurrences(activeJob.name, now);
+          await this.#updateCanceledOccNum(activeJob.name, now, canceledOccNum, true);
+          console.info(`(node:${process.pid})`,
+            `Job(${activeJob.name}) is set to "Cancel" as its scheduled date passed!`);
+        } else {
+          console.error(`(node:${process.pid})`, error.message || error);
+        }
       }
     }
   }
@@ -93,12 +104,10 @@ export default class Scheduler {
     });
   }
 
-  static async #getActiveJobOccurrence(jobName) {
-    let now = new Date();
+  static async #getActiveJobOccurrence(jobName, now) {
     const selectSQL = 'select scheduledDateTime, INSTANCE_GUID from jobOccurrence' +
       ' where jobName = ' +  EntityDB.pool.escape(jobName) +
-      ' and scheduledDateTime >= ' +
-      EntityDB.pool.escape(now.toISOString().slice(0, 19).replace('T', ' '));
+      '   and scheduledDateTime >= ' + EntityDB.pool.escape(now);
     return new Promise((resolve, reject) => {
       EntityDB.executeSQL(selectSQL, (error, results)=> {
         if (error) {
@@ -111,10 +120,44 @@ export default class Scheduler {
     });
   }
 
-  static #scheduleJobOccurrences(start, end) {
-    if (!start) {
-      start = new Date();
+  static async #cancelPassedOccurrences(jobName, now) {
+    const updateSQL1 = 'update jobOccurrence set status = ' + EntityDB.pool.escape(OccurrenceStatusEnum.canceled) +
+      ' where jobName = ' +  EntityDB.pool.escape(jobName) +
+      '   and scheduledDateTime < ' + EntityDB.pool.escape(now) +
+      '   and ( status = ' + EntityDB.pool.escape(OccurrenceStatusEnum.ready) +
+      '      or status = ' + EntityDB.pool.escape(OccurrenceStatusEnum.running) + ' )';
+    return new Promise((resolve, reject) => {
+      EntityDB.executeSQL(updateSQL1, (error, results)=> {
+        if (error) {
+          reject(new JobError('GENERIC_ERROR', error));
+        } else {
+          resolve(results.changedRows);
+        }
+      })
+    });
+  }
+
+  static async #updateCanceledOccNum(jobName, now, canceledOccNum, isCompleted) {
+    let updateSQL = 'update job ' +
+      'set canceledOccurrences = canceledOccurrences + ' + EntityDB.pool.escape(canceledOccNum) +
+      ', lastChangedBy = "sys", lastChangeTime = ' + EntityDB.pool.escape(now);
+    if (isCompleted) {
+      updateSQL += ', status = ' + EntityDB.pool.escape(JobStatusEnum.completed);
     }
+    updateSQL += ' where name = ' +  EntityDB.pool.escape(jobName);
+    return new Promise((resolve, reject) => {
+      EntityDB.executeSQL(updateSQL, (error, results)=> {
+        if (error) {
+          reject(new JobError('GENERIC_ERROR', error));
+        } else {
+          resolve(results);
+        }
+      })
+    });
+  }
+
+  static #scheduleJobOccurrences(end) {
+    let start = new Date();
     if (!end) {
       end = new Date();
       // The end is added for 1 hr buffer.
@@ -123,9 +166,41 @@ export default class Scheduler {
       end.setHours(start.getHours() + this.#intervalHrs + 1);
     }
     let jobs = Job.getJobs({status : [JobStatusEnum.scheduled]});
+    console.info(`(node:${process.pid})`,
+      `Scheduling job occurrences from ${start.toISOString()} to ${end.toISOString()} for ${jobs.length} job(s)`);
     for (const job of jobs) {
-      job.instance.scheduleOccurrences(start, end)
-        .catch( error => console.error(`(node:${process.pid})`, error.message || error));
+      console.info(`(node:${process.pid})`,
+        `Scheduling job(${job.name}) from ${start.toISOString()} to ${end.toISOString()}`);
+      const now = new Date();
+      if (job.endDateTime < now) {
+        // If the job is running, the below statement updates the job to "Completed" in DB.
+        // In the cache, the job's status is still "Scheduled".
+        // Only after the job is finished or failed, the cache got updated to "Completed".
+        this.#updateCanceledOccNum(job.name,
+          now.toISOString().slice(0, 19).replace('T', ' '),
+          0, true)
+          .then( result => {
+            console.info(`(node:${process.pid})`,
+              `Job(${job.name}) is set to "Completed" as its endDateTime already passed.`);
+          })
+          .catch( error => {
+            console.error(`(node:${process.pid})`, error.message || error);
+          })
+      } else {
+        job.instance.scheduleOccurrences(end)
+          .then( result => {
+            console.info(`(node:${process.pid})`,
+              `Job(${result.jobName}) has ${result.occNum} occurrence(s) scheduled.`);
+          })
+          .catch( error => {
+            if (error.message.msgName === 'END_DATE_BEFORE_CURRENT_DATE') {
+              console.info(`(node:${process.pid})`,
+                `Job(${job.name}) has occurrence(s) already scheduled after ${end.toISOString()}.`);
+            } else {
+              console.error(`(node:${process.pid})`, error.message || error);
+            }
+          });
+      }
     }
   }
 

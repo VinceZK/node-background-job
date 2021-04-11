@@ -37,8 +37,8 @@ export class JobService {
     }
   }
 
-  getJob(jobName: string | null): Observable<Job | Message> {
-    return this.http.get<Job | Message>(this.originalHost + `/api/jobs/${jobName}`, httpOptions).pipe(
+  getJob(jobName: string | null): Observable<Job | Message[]> {
+    return this.http.get<Job | Message[]>(this.originalHost + `/api/jobs/${jobName}`, httpOptions).pipe(
       catchError(this.handleError<any>('getJob')));
   }
 
@@ -66,21 +66,25 @@ export class JobService {
       catchError(this.handleError<any>('searchJobs')));
   }
 
-  getJobOccurrences(jobName: string, status: number[] = [0, 1, 2, 3, 4, 5],
-                    startDate?: string, endDate?: string, uuid?: string): Observable<JobOccurrence[]> {
+  searchJobOccurrences(jobName: string, status: number[] = [0, 1, 2, 3, 4, 5],
+                       startDate?: string, endDate?: string): Observable<JobOccurrence[]> {
     let queryString = '';
     status.forEach( s => queryString += `&status=${s}`);
     if (startDate) { queryString += `&startDate=${startDate}`; }
     if (endDate) { queryString += `&endDate=${endDate}`; }
-    if (uuid) { queryString += `&uuid=${uuid}`; }
     queryString = queryString.replace('&', '?');
     return this.http.get<JobOccurrence[]>(this.originalHost + `/api/jobs/${jobName}/occurrences`, httpOptions).pipe(
-      catchError(this.handleError<any>('getJobOccurrences')));
+      catchError(this.handleError<any>('searchJobOccurrences')));
   }
 
-  cancelJobOccurrences(uuids: string[]): Observable<Message[]> {
-    return this.http.post<Message[]>(this.originalHost + `/api/jobs/occurrences`, uuids, httpOptions).pipe(
-      catchError(this.handleError<any>('cancelJobOccurrences')));
+  getOccurrence(uuid: string | null): Observable<JobOccurrence | Message[]> {
+    return this.http.get<JobOccurrence | Message[]>(this.originalHost + `/api/occurrences/${uuid}/`, httpOptions).pipe(
+      catchError(this.handleError<any>('getOccurrence')));
+  }
+
+  cancelOccurrences(uuids: string[]): Observable<Message[]> {
+    return this.http.post<Message[]>(this.originalHost + `/api/occurrences`, uuids, httpOptions).pipe(
+      catchError(this.handleError<any>('cancelOccurrences')));
   }
 
   searchJobPrograms(nameFilter: string): Observable<JobProgram[]> {

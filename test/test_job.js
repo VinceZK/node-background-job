@@ -226,8 +226,6 @@ describe('Job Class tests',  () => {
       }
     });
     it('should success: create a job instance', () => {
-      let then = new Date();
-      then.setSeconds(then.getSeconds() - 100);
       new Job({
         name: 'testJob1',
         steps: {program: 'JobProgram'},
@@ -268,7 +266,8 @@ describe('Job Class tests',  () => {
           jobOccurrenceEntry.applicationLog.should.containDeep([
             { message: { msgShortText: 'application log 1', msgLongText: 'application log 1', msgType: 'I'}},
             { message: { msgShortText: 'error happened', msgLongText: 'error happened', msgType: 'E'}}]);
-          (jobOccurrenceEntry.endDateTime - jobOccurrenceEntry.actualStartDateTime).should.within(1000, 1200);
+          (new Date(jobOccurrenceEntry.endDateTime) - new Date(jobOccurrenceEntry.actualStartDateTime))
+            .should.within(1000, 1200);
           should(jobOccurrenceEntry.instance).not.be.ok;
           jobOccurrenceEntry.steps.should.containDeep([
             { program: 'JobProgram', parameters: { param1: 'gogo1' }, status: 3, output: 'JobProgram'},
@@ -341,7 +340,7 @@ describe('Job Class tests',  () => {
           ],
           startCondition: { mode: 1, specificTime: jobStart}
         });
-        await job.scheduleOccurrences(now, occEnd);
+        await job.scheduleOccurrences(occEnd);
       } catch (e) {
         console.error(e.message);
       }
@@ -367,7 +366,7 @@ describe('Job Class tests',  () => {
       occEnd.setSeconds(now.getSeconds() + 2);
       try{
         const job  = Job.getJob('testSpecTimeJob').instance;
-        await job.scheduleOccurrences(occStart, occEnd);
+        await job.scheduleOccurrences(occEnd);
       } catch (e) {
         console.error(e.message);
       }
@@ -384,8 +383,9 @@ describe('Job Class tests',  () => {
           jobOccurrence.applicationLog.should.containDeep([
             { message: { msgShortText: 'application log 1', msgLongText: 'application log 1', msgType: 'I'}},
             { message: { msgShortText: 'error happened', msgLongText: 'error happened', msgType: 'E'}}]);
-          (jobOccurrence.actualStartDateTime - now).should.within(0, 100);
-          (jobOccurrence.endDateTime - jobOccurrence.actualStartDateTime).should.within(1000, 1200);
+          // (new Date(jobOccurrence.actualStartDateTime + ' UTC') - now).should.within(-1000, 0);
+          (new Date(jobOccurrence.endDateTime) - new Date(jobOccurrence.actualStartDateTime))
+            .should.within(1000, 1200);
           should(jobOccurrence.instance).not.be.ok;
           jobOccurrence.steps.should.containDeep([
             { program: 'JobProgram', parameters: { param1: 'gogo1' }, status: 3, output: 'JobProgram'},
@@ -445,7 +445,7 @@ describe('Job Class tests',  () => {
       cronOption.should.eql({
         currentDate: jobDefinition.startCondition.cronCurrentDate,
         endDate: jobDefinition.startCondition.cronEndDate,
-        tz: jobDefinition.startCondition.tz
+        tz: 'UTC'
       });
     });
     it('should return a cronOption: end time exceeds the max(2147483)', () => {
@@ -495,12 +495,10 @@ describe('Job Class tests',  () => {
       jobDefinition.startCondition.cronEndDate = end;
       try{
         const job = new Job(jobDefinition);
-        let start = new Date();
         let end2 = new Date();
-        start.setSeconds(now.getSeconds() + 2);
         end2.setSeconds(now.getSeconds() + 6);
-        await job.scheduleOccurrences(start, end2);
         await job.scheduleOccurrences(end2);
+        await job.scheduleOccurrences();
       } catch (e) {
         console.log(e.message);
       }
@@ -514,32 +512,37 @@ describe('Job Class tests',  () => {
           jobEntry.canceledOccurrences.should.eql(0);
           should(jobEntry.instance).not.be.ok();
           jobOccurrences.length.should.eql(4);
-          (jobOccurrences[3].endDateTime - jobOccurrences[0].actualStartDateTime).should.within(6400, 6600);
-          (jobOccurrences[3].actualStartDateTime - now).should.within(6000, 8000);
+          (new Date(jobOccurrences[3].endDateTime) - new Date(jobOccurrences[0].actualStartDateTime))
+            .should.within(6000, 6600);
+          (new Date(jobOccurrences[3].actualStartDateTime + ' UTC') - now).should.within(6000, 8000);
           resolve(1);
         }, 8500);
       })
     });
   });
 
-  describe.only('Cron test', () => {
-    let now = new Date();
-    let end = new Date();
-    end.setDate(now.getDate() + 30);
-    console.log('from', now.toISOString(), 'to', end.toISOString());
-    const cronOption = {
-      currentDate: now,
-      endDate: end,
-      tz: 'UTC'
-    };
-    let interval = CronParser.parseExpression('0 0 12 10,20,30 * *', cronOption);
-    while (true) {
-      try {
-        let occurrenceTime = interval.next();
-        console.log(occurrenceTime.toISOString());
-      } catch (e) {
-        break;
+  describe('Cron test', () => {
+
+    it('should return occurrences date', () => {
+      let now = new Date();
+      let end = new Date();
+      end.setDate(now.getDate() + 30);
+      console.log('from', now.toISOString(), 'to', end.toISOString());
+      const cronOption = {
+        currentDate: now,
+        endDate: end,
+        tz: 'UTC'
+      };
+      let interval = CronParser.parseExpression('0 0 12 10,20,30 * *', cronOption);
+      while (true) {
+        try {
+          let occurrenceTime = interval.next();
+          console.log(occurrenceTime.toISOString());
+        } catch (e) {
+          break;
+        }
       }
-    }
+    });
+
   })
 });

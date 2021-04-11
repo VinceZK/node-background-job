@@ -41,8 +41,8 @@ export default class JobCtrl{
       return Job.getJob(jobName).instance.scheduleOccurrences();
     });
     Promise.all(iterator)
-      .then((jobNames)=>{
-        res.json(jobNames.map(j => message.report('job', 'JOB_IS_SCHEDULED', 'S', j)))
+      .then((results)=>{
+        res.json(results.map(result => message.report('job', 'JOB_IS_SCHEDULED', 'S', result.jobName)))
       })
       .catch(e => {
         if (Array.isArray(e)){
@@ -146,11 +146,8 @@ export default class JobCtrl{
       });
   }
 
-  static getJobOccurrences(req, res) {
+  static searchJobOccurrences(req, res) {
     let filter = {jobName: req.params['name']};
-    if(req.query.uuid) {
-      filter.uuid = req.query.uuid;
-    }
     if (req.query.status) {
       filter.status = [];
       let statuses = Array.isArray(req.query.status)? req.query.status : [req.query.status];
@@ -173,11 +170,28 @@ export default class JobCtrl{
     }
   }
 
-  static cancelOccurrence(req, res) {
+  static getOccurrence(req, res) {
+    let uuid = req.params['uuid'];
+    const occurrence = JobOccurrence.getOccurrence(uuid);
+    if (occurrence) {
+      delete occurrence.instance;
+      res.json(occurrence);
+    } else {
+      if (process.env.USE_DB === 'true') {
+        JobOccurrence.getOccurrenceDB(uuid)
+          .then( result => res.json(result))
+          .catch( errors => res.json(errors))
+      } else {
+        res.json(null);
+      }
+    }
+  }
+
+  static cancelOccurrences(req, res) {
     const occurrenceUUIDs = req.body;
     let iterator = occurrenceUUIDs.map( uuid => {
       return async () => {
-        let occurrence = JobOccurrence.getOccurrences({uuid: uuid});
+        let occurrence = JobOccurrence.getOccurrence(uuid);
         await occurrence.instance.cancel();
         return occurrence;
       }

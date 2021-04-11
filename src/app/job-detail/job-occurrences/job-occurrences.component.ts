@@ -1,8 +1,9 @@
 import {Component, Input, OnInit} from '@angular/core';
-import {FormArray, FormBuilder, FormGroup} from '@angular/forms';
-import {AttributeBase, AttributeControlService, RelationMeta} from 'jor-angular';
+import {FormBuilder, FormGroup} from '@angular/forms';
+import {AttributeControlService} from 'jor-angular';
 import {JobService} from '../../job.service';
-import {JobOccurrence, StartCondition, Step} from '../../job-types';
+import {JobOccurrence} from '../../job-types';
+import {OccurrenceService} from './occurrence.service';
 
 @Component({
   selector: 'app-job-occurrences',
@@ -16,13 +17,16 @@ export class JobOccurrencesComponent implements OnInit {
   isSearchListShown = true;
   startDate!: Date;
   endDate!: Date;
-  attrCtrls!: AttributeBase[];
-  occStatuses = ['Initial', 'Ready', 'Running', 'Finished', 'Failed', 'Canceled'];
-  occStatusColors = ['text-secondary', 'text-info', 'text-warning', 'text-success', 'text-danger', 'text-muted'];
+  occStatuses: string[] = [];
+  occStatusColors: string[] = [];
 
   constructor(private fb: FormBuilder,
               private attributeControlService: AttributeControlService,
-              private jobService: JobService) { }
+              private occurrenceService: OccurrenceService,
+              private jobService: JobService) {
+    this.occStatuses = this.occurrenceService.occStatuses;
+    this.occStatusColors = this.occurrenceService.occStatusColors;
+  }
 
   ngOnInit(): void {
     this.search();
@@ -39,13 +43,13 @@ export class JobOccurrencesComponent implements OnInit {
   search(): void {
     const jobName = this.mainForm.get('name')?.value;
     if (!jobName) { return; }
-    this.jobService.getJobOccurrences(this.mainForm.get('name')?.value, [])
+    this.jobService.searchJobOccurrences(this.mainForm.get('name')?.value, [])
       .subscribe(data => {
         this.jobOccurrences = data as JobOccurrence[];
       });
   }
 
   onSelect(jobOcc: JobOccurrence): void {
-
+    console.log(jobOcc);
   }
 }

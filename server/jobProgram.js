@@ -252,9 +252,10 @@ export default class JobProgram {
       setTimeout( () => {
         console.log(this.name, this.parameters);
         if (this.parameters.param1 === 'gogo2'){
-          applicationLog.info('application log 1');
-          reject(new Error('error happened'));
+          applicationLog.error('Error happened in application log');
+          reject(new Error('Error happened in exception'));
         } else {
+          applicationLog.info('Successfully finished');
           console.log('finished!');
         }
         resolve(this.name);
