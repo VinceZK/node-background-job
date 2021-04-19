@@ -91,6 +91,15 @@ export default class JobCtrl{
     }
   }
 
+  static getJobStatus(req, res) {
+    const jobEntry = Job.getJob(req.params['name']);
+    if (jobEntry) {
+      res.json(jobEntry.status);
+    } else {
+      res.json(null);
+    }
+  }
+
   static searchJobs(req, res) {
     let filter = {};
     if (req.query.name_includes) {
@@ -165,8 +174,23 @@ export default class JobCtrl{
         .catch( errors => res.json(errors))
     } else {
       const occurrences = JobOccurrence.getOccurrences(filter);
-      occurrences.forEach( occurrence => {delete occurrence.instance});
-      res.json(occurrences);
+      const results = [];
+      occurrences.forEach( occurrence => {
+        results.push({
+          uuid: occurrence.uuid,
+          status: occurrence.status,
+          jobName: occurrence.jobName,
+          scheduledDateTime: occurrence.scheduledDateTime,
+          actualStartDateTime: occurrence.actualStartDateTime,
+          endDateTime: occurrence.endDateTime,
+          identity: occurrence.identity,
+          steps: occurrence.steps,
+          startCondition: occurrence.startCondition,
+          outputSetting: occurrence.outputSetting,
+          applicationLog: occurrence.applicationLog
+        })
+      });
+      res.json(results);
     }
   }
 
@@ -174,8 +198,19 @@ export default class JobCtrl{
     let uuid = req.params['uuid'];
     const occurrence = JobOccurrence.getOccurrence(uuid);
     if (occurrence) {
-      delete occurrence.instance;
-      res.json(occurrence);
+      res.json({
+        uuid: occurrence.uuid,
+        status: occurrence.status,
+        jobName: occurrence.jobName,
+        scheduledDateTime: occurrence.scheduledDateTime,
+        actualStartDateTime: occurrence.actualStartDateTime,
+        endDateTime: occurrence.endDateTime,
+        identity: occurrence.identity,
+        steps: occurrence.steps,
+        startCondition: occurrence.startCondition,
+        outputSetting: occurrence.outputSetting,
+        applicationLog: occurrence.applicationLog
+      });
     } else {
       if (process.env.USE_DB === 'true') {
         JobOccurrence.getOccurrenceDB(uuid)

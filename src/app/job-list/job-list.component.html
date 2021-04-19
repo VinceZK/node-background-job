@@ -18,15 +18,15 @@
       <div id="mode" class="ml-3">
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="mode0" [(ngModel)]="mode[0]">
-          <label class="form-check-label" for="mode0">Immediately</label>
+          <label class="form-check-label" for="mode0">{{jobModes[0]}}</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="mode1" [(ngModel)]="mode[1]">
-          <label class="form-check-label" for="mode1">Specific-Time</label>
+          <label class="form-check-label" for="mode1">{{jobModes[1]}}</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="mode2" [(ngModel)]="mode[2]">
-          <label class="form-check-label" for="mode2">Recursively</label>
+          <label class="form-check-label" for="mode2">{{jobModes[2]}}</label>
         </div>
       </div>
     </div>
@@ -35,19 +35,15 @@
       <div id="status" class="ml-3">
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="status0" [(ngModel)]="status[0]">
-          <label class="form-check-label" for="status0">Initial</label>
+          <label class="form-check-label" [class]="jobStatusColors[0]" for="status0">{{jobStatuses[0]}}</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="status1" [(ngModel)]="status[1]">
-          <label class="form-check-label" for="status1">Ready</label>
+          <label class="form-check-label" [class]="jobStatusColors[1]" for="status1">{{jobStatuses[1]}}</label>
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="checkbox" id="status2" [(ngModel)]="status[2]">
-          <label class="form-check-label" for="status2">Completed</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="status3" [(ngModel)]="status[3]">
-          <label class="form-check-label" for="status3">Canceled</label>
+          <label class="form-check-label" [class]="jobStatusColors[2]" for="status2">{{jobStatuses[2]}}</label>
         </div>
       </div>
     </div>
@@ -82,8 +78,8 @@
     <tr *ngFor="let job of jobs">
       <td><a [routerLink]="['/jobs', job.name, {action: 'display'}]">{{job.name}}</a></td>
       <td>{{job.description?.DEFAULT}}</td>
-      <td>{{jobStatus(job.status)}}</td>
-      <td>{{jobMode(job.mode)}}</td>
+      <td [class]="jobStatusColors[job.status]">{{jobStatuses[job.status]}}</td>
+      <td>{{jobModes[job.mode]}}</td>
       <td>{{job.finishedOccurrences}}</td>
       <td>{{job.failedOccurrences}}</td>
       <td>{{job.canceledOccurrences}}</td>

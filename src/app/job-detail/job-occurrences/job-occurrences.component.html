@@ -1,63 +1,60 @@
 <div class="row">
   <div *ngIf="isSearchListShown" class="col-4">
-    <div class="mb-2 flex-column">
-      <div class="btn-toolbar justify-content-between ">
+    <div class="row mb-2">
+      <div class="col-4">
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusInitial" value="0">
-          <label class="form-check-label" [ngClass]="occStatusColors[0]" for="statusInitial">
-            {{occStatuses[0]}}(3)
-          </label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusReady" value="1">
+          <input class="form-check-input" type="checkbox" id="statusReady" [(ngModel)]="status[0]">
           <label class="form-check-label" [ngClass]="occStatusColors[1]" for="statusReady">
-            {{occStatuses[1]}}(4)
+            {{occStatuses[1]}}
           </label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusRunning" value="2">
-          <label class="form-check-label" [ngClass]="occStatusColors[2]" for="statusRunning">
-            {{occStatuses[2]}}(3)
-          </label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusFinished" value="3">
-          <label class="form-check-label" [ngClass]="occStatusColors[3]" for="statusFinished">
-            {{occStatuses[3]}}(2)
-          </label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusFailed" value="4">
+          <input class="form-check-input" type="checkbox" id="statusFailed" [(ngModel)]="status[3]">
           <label class="form-check-label" [ngClass]="occStatusColors[4]" for="statusFailed">
-            {{occStatuses[4]}}(1)
-          </label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusCanceled" value="5">
-          <label class="form-check-label" [ngClass]="occStatusColors[5]" for="statusCanceled">
-            {{occStatuses[5]}}(1)
+            {{occStatuses[4]}}
           </label>
         </div>
       </div>
-
-      <div class="mt-3 row">
-        <div class="col-9">
+      <div class="col-4">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusRunning" [(ngModel)]="status[1]">
+          <label class="form-check-label" [ngClass]="occStatusColors[2]" for="statusRunning">
+            {{occStatuses[2]}}
+          </label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusCanceled" [(ngModel)]="status[4]">
+          <label class="form-check-label" [ngClass]="occStatusColors[5]" for="statusCanceled">
+            {{occStatuses[5]}}
+          </label>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusFinished" [(ngModel)]="status[2]">
+          <label class="form-check-label" [ngClass]="occStatusColors[3]" for="statusFinished">
+            {{occStatuses[3]}}
+          </label>
+        </div>
+      </div>
+      <div class="row ml-2 mt-2">
+        <div class="col-10">
           <div class="form-group row">
-            <label for="startFrom" class="col-sm-3 col-form-label col-form-label-sm">From:</label>
-            <div class="col-sm-9">
+            <label for="startFrom" class="col-sm-2 col-form-label col-form-label-sm">From:</label>
+            <div class="col-sm-10">
               <input id="startFrom" name="startFrom" type="datetime-local" class="form-control form-control-sm"
-                     [(date)]="startDate" (dateChange)="onChangeStartDate($event)">
+                     [(date)]="startDate">
             </div>
           </div>
           <div class="form-group row">
-            <label for="endAt" class="col-sm-3 col-form-label col-form-label-sm">To:</label>
-            <div class="col-sm-9">
+            <label for="endAt" class="col-sm-2 col-form-label col-form-label-sm">To:</label>
+            <div class="col-sm-10">
               <input id="endAt" name="endAt" type="datetime-local" class="form-control form-control-sm"
-                     [(date)]="endDate" (dateChange)="onChangeEndDate($event)">
+                     [(date)]="endDate">
             </div>
           </div>
         </div>
-        <div class="form-group col-3">
+        <div class="col-2 form-group">
           <button type="button" id="search" class="btn btn-primary btn-sm position-absolute fixed-bottom"
                   (click)="search()">Search</button>
         </div>
@@ -66,25 +63,25 @@
 
     <div class="list-group">
       <a *ngFor="let jobOcc of jobOccurrences" routerLink="/jobs/{{jobOcc.jobName}}/occurrences/{{jobOcc.uuid}}"
-         routerLinkActive="active" (click)="onSelect(jobOcc)"
+         routerLinkActive="active"
          class="list-group-item list-group-item-action flex-column align-items-start">
         <h5 class="mb-1" [ngClass]="occStatusColors[jobOcc.status]">{{occStatuses[jobOcc.status]}}</h5>
         <div class="row">
           <small class="col-sm-6">Scheduled Date:</small>
-          <small class="col-sm-6">{{jobOcc.scheduledDateTime}}</small>
+          <small class="col-sm-6">{{toLocaleString(jobOcc.scheduledDateTime)}}</small>
         </div>
         <div class="row">
           <small class="col-sm-6">Actual Start Date:</small>
-          <small class="col-sm-6">{{jobOcc.actualStartDateTime}}</small>
+          <small class="col-sm-6">{{toLocaleString(jobOcc.actualStartDateTime)}}</small>
         </div>
         <div class="row">
           <small class="col-sm-6">End Date:</small>
-          <small class="col-sm-6">{{jobOcc.endDateTime}}</small>
+          <small class="col-sm-6">{{toLocaleString(jobOcc.endDateTime)}}</small>
         </div>
       </a>
     </div>
-
   </div>
+
   <div [ngClass]="{'col-8': isSearchListShown, 'col-12': !isSearchListShown}">
     <router-outlet></router-outlet>
   </div>

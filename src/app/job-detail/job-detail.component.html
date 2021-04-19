@@ -4,7 +4,15 @@
   </div>
 
   <div class="flex-row-reverse">
-    <button *ngIf="!isNewMode && mainForm?.get('status')?.value === 0"
+    <button class="btn btn-sm btn-light mr-2" type="button" title="Return to List" id="refresh"
+            (click)="refresh()" >
+      <span class="fas fa-sync-alt"></span>
+    </button>
+    <button class="btn btn-sm btn-outline-info mr-2" type="button" title="Return to List" id="toList"
+            (click)="return2List()" >
+      <span class="fas fa-list-ul"> To List</span>
+    </button>
+    <button *ngIf="!isNewMode && mainForm?.get('status')?.value !== 2"
             class="btn btn-sm btn-outline-primary mr-2" type="button" title="Edit/Display" id="editDisplay"
             (click)="switchEditDisplay()">
       <span *ngIf="readonly" class="fas fa-edit"> Edit</span>
@@ -46,12 +54,12 @@
       <textarea class="form-control" id="description" name="description" rows="1"
                 formControlName="DEFAULT" [readonly]="readonly"></textarea>
     </div>
-    <dk-app-attribute-form2 class="col-md-6 col-lg-4"
-                            [attributeControl]="getJobAttrCtrlFromID('status')"
-                            [formGroup]="mainForm"
-                            [readonly]="true"
-                            [isSmallSize] = "true">
-    </dk-app-attribute-form2>
+    <div class="col-md-6 col-lg-4">
+      <label for="status" class="col-form-label form-control-sm">Job Status:
+      </label>
+      <h3 class="ml-2" id="status"
+          [ngClass]="jobStatusColors[mainForm.get('status')?.value]">{{jobStatuses[mainForm.get('status')?.value]}}</h3>
+    </div>
   </div>
 
   <ul class="nav nav-tabs mt-1">

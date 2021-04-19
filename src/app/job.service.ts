@@ -17,6 +17,18 @@ const httpOptions = {
   providedIn: 'root'
 })
 export class JobService {
+  jobStatuses = ['Initial', 'Ready', 'Completed'];
+  jobStatusColors = ['text-secondary', 'text-warning', 'text-info'];
+  occStatuses = ['Initial', 'Ready', 'Running', 'Finished', 'Failed', 'Canceled'];
+  occStatusColors = ['text-secondary', 'text-info', 'text-warning', 'text-success', 'text-danger', 'text-muted'];
+  jobModes = ['Immediately', 'Specific-time', 'Recursively', 'Event-based'];
+  messageTypes = {
+    S: { text: 'Success', color: 'text-success' },
+    W: { text: 'Warning', color: 'text-warning' },
+    E: { text: 'Error', color: 'text-danger' },
+    I: { text: 'Information', color: 'text-info' },
+    X: { text: 'Exception', color: 'text-danger' }
+  };
   private originalHost = environment.originalHost;
 
   constructor(private http: HttpClient,
@@ -25,6 +37,10 @@ export class JobService {
 
   get CurrentTime(): string {
     return formatDate( new Date(), 'yyyy-MM-dd hh:mm:ss', 'en-US' );
+  }
+
+  toLocaleString(dateStr: string | undefined): string {
+    return dateStr ? formatDate( new Date(dateStr + ' UTC'), 'yyyy-MM-dd HH:mm:ss', 'en-US') : '';
   }
 
   saveJob(isNew: boolean, jobDefinition: Job): Observable<Message[]> {
@@ -40,6 +56,11 @@ export class JobService {
   getJob(jobName: string | null): Observable<Job | Message[]> {
     return this.http.get<Job | Message[]>(this.originalHost + `/api/jobs/${jobName}`, httpOptions).pipe(
       catchError(this.handleError<any>('getJob')));
+  }
+
+  getJobStatus(jobName: string | null): Observable<number> {
+    return this.http.get<number>(this.originalHost + `/api/jobs/${jobName}/status`, httpOptions).pipe(
+      catchError(this.handleError<any>('getJobStatus')));
   }
 
   scheduleJobs(JobNames: string[]): Observable<Message[]> {
@@ -73,7 +94,8 @@ export class JobService {
     if (startDate) { queryString += `&startDate=${startDate}`; }
     if (endDate) { queryString += `&endDate=${endDate}`; }
     queryString = queryString.replace('&', '?');
-    return this.http.get<JobOccurrence[]>(this.originalHost + `/api/jobs/${jobName}/occurrences`, httpOptions).pipe(
+    console.log(queryString);
+    return this.http.get<JobOccurrence[]>(this.originalHost + `/api/jobs/${jobName}/occurrences` + queryString, httpOptions).pipe(
       catchError(this.handleError<any>('searchJobOccurrences')));
   }
 

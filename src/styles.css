@@ -54,7 +54,7 @@ select.ng-invalid{
   left: 0;
   z-index: 500;
 }
-.dk-parameter-area {
+.dk-scroll-area {
   overflow-y: scroll;
   min-height: 10rem;
   max-height: 50rem;

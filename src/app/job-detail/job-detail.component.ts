@@ -16,6 +16,7 @@ import {forkJoin, Observable, of} from 'rxjs';
 import {Job} from '../job-types';
 import {existingJobNameValidator} from '../async-validators';
 import {JobStartConditionComponent} from './job-start-condition/job-start-condition.component';
+import {JobOccurrencesComponent} from './job-occurrences/job-occurrences.component';
 
 @Component({
   selector: 'app-job-detail',
@@ -35,6 +36,8 @@ export class JobDetailComponent implements OnInit {
   changedValue!: Job;
   tabStrip = 3;
   workInProgress = false;
+  jobStatuses: string[];
+  jobStatusColors: string[];
 
   @ViewChild(JobStartConditionComponent)
   jobStartConditionComponent!: JobStartConditionComponent;
@@ -53,6 +56,8 @@ export class JobDetailComponent implements OnInit {
               private entityService: EntityService,
               private uiMapperService: UiMapperService,
               private messageService: MessageService) {
+    this.jobStatuses = this.jobService.jobStatuses;
+    this.jobStatusColors = this.jobService.jobStatusColors;
   }
 
   ngOnInit(): void {
@@ -112,6 +117,24 @@ export class JobDetailComponent implements OnInit {
     this.tabStrip = tabStripID;
   }
 
+  return2List(): void {
+    this.router.navigate(['jobs']);
+  }
+
+  refresh(): void {
+    this.jobService.getJobStatus(this.originalValue.name)
+      .subscribe( status => {
+        const currentStatus = this.mainForm.get('status')?.value;
+        if (status !== null && currentStatus !== status) {
+          this.mainForm.get('status')?.setValue(status);
+          if (this.tabStrip === 3) {
+            this.tabStrip = 0;
+            setTimeout( () => { this.tabStrip = 3; }, 200);
+          }
+        }
+      });
+  }
+
   switchEditDisplay(): void {
     if (this.readonly ) {
       this._switch2EditMode();
@@ -138,6 +161,8 @@ export class JobDetailComponent implements OnInit {
     jobNameCtrl.clearAsyncValidators();
     const startConditionCtrl = this.mainForm.get('startCondition') as FormGroup;
     startConditionCtrl.get('mode')?.disable();
+    const outputSettingCtrl = this.mainForm.get('outputSetting') as FormGroup;
+    outputSettingCtrl.get('console2ApplicationLog')?.disable();
 
     this.mainForm.markAsPristine();
     // Replace the URL from change to display
@@ -154,6 +179,8 @@ export class JobDetailComponent implements OnInit {
     }
     const startConditionCtrl = this.mainForm.get('startCondition') as FormGroup;
     startConditionCtrl.get('mode')?.enable();
+    const outputSettingCtrl = this.mainForm.get('outputSetting') as FormGroup;
+    outputSettingCtrl.get('console2ApplicationLog')?.enable();
 
     // Replace the URL from to display
     if (this.action === 'display') {this.action = 'change'; }
@@ -181,9 +208,9 @@ export class JobDetailComponent implements OnInit {
       failedOccurrences: [data.failedOccurrences],
       canceledOccurrences: [data.canceledOccurrences],
       createdBy: [data.createdBy],
-      createTime: [data.createTime],
+      createTime: [this.jobService.toLocaleString(data.createTime)],
       lastChangedBy: [data.lastChangedBy],
-      lastChangeTime: [data.lastChangeTime],
+      lastChangeTime: [this.jobService.toLocaleString(data.lastChangeTime)],
       startCondition: this.fb.group({
         mode: [data.startCondition.mode],
         specificTime: [data.startCondition.specificTime],
@@ -191,6 +218,9 @@ export class JobDetailComponent implements OnInit {
         cronCurrentDate: [data.startCondition.cronCurrentDate],
         cronEndDate: [data.startCondition.cronEndDate],
         tz: [data.startCondition.tz],
+      }),
+      outputSetting: this.fb.group({
+        console2ApplicationLog: [data.outputSetting?.console2ApplicationLog]
       })
     });
     if (data.description) {

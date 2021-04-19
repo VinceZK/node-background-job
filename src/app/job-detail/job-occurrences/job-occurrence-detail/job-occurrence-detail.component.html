@@ -1,16 +1,182 @@
 <div *ngIf="jobOccurrence">
-  <h5 class="mb-1" [ngClass]="occStatusColors[jobOccurrence.status]">{{occStatuses[jobOccurrence.status]}}</h5>
-  <div class="row">
-    <small class="col-sm-6">Scheduled Date:</small>
-    <small class="col-sm-6">{{jobOccurrence.scheduledDateTime}}</small>
+  <div class="row mb-4">
+    <div class="col-sm-4 col-lg-3">
+      <h3 class="text-center mt-2" [ngClass]="occStatusColors[jobOccurrence.status]">{{occStatuses[jobOccurrence.status]}}</h3>
+    </div>
+    <div class="col-sm-8 col-lg-6">
+      <div class="row">
+        <small class="col-md-6">Scheduled Date:</small>
+        <small class="col-md-6">{{toLocaleString(jobOccurrence.scheduledDateTime)}}</small>
+      </div>
+      <div class="row">
+        <small class="col-md-6">Actual Start Date:</small>
+        <small class="col-md-6">{{toLocaleString(jobOccurrence.actualStartDateTime)}}</small>
+      </div>
+      <div class="row">
+        <small class="col-md-6">End Date:</small>
+        <small class="col-md-6">{{toLocaleString(jobOccurrence.endDateTime)}}</small>
+      </div>
+    </div>
+    <div class="col-lg-3 text-center mt-2">
+      <button type="button" id="checkStartCondition" class="btn btn-info btn-sm"
+              (click)="openStartCondition()">Start Condition</button>
+    </div>
   </div>
-  <div class="row">
-    <small class="col-sm-6">Actual Start Date:</small>
-    <small class="col-sm-6">{{jobOccurrence.actualStartDateTime}}</small>
+
+  <div class="card mt-2">
+    <div class="card-header">Steps</div>
+    <div class="card-body">
+      <table class="table table-bordered table-sm">
+        <thead class="thead-light">
+          <tr>
+            <th scope="col" class="dk-status">Status</th>
+            <th scope="col">Program</th>
+            <th scope="col" class="dk-icon-para">Parameters</th>
+            <th scope="col" class="dk-icon-output">Output</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let step of jobOccurrence.steps">
+            <td class="dk-status" [ngClass]="occStatusColors[step.status || 0]">{{occStatuses[step.status || 0]}}</td>
+            <td>{{step.program}}</td>
+            <td class="dk-icon-para">
+              <button title="Parameters" id="parameters" class="btn btn-sm" type="button"
+                      (click)="openParameters(step)">
+                <span class="fas fa-sliders-h"></span>
+              </button>
+            </td>
+            <td class="dk-icon-output">
+              <button title="Output" id="output" class="btn btn-sm" type="button"
+                      (click)="openOutput(step)" [disabled]="!step.output">
+                <span class="fas fa-stream"></span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="console2AppLog" disabled
+               [ngModel]="jobOccurrence.outputSetting?.console2ApplicationLog" >
+        <label class="form-check-label" for="console2AppLog">Store console log into application log</label>
+      </div>
+
+    </div>
   </div>
-  <div class="row">
-    <small class="col-sm-6">End Date:</small>
-    <small class="col-sm-6">{{jobOccurrence.endDateTime}}</small>
+
+  <div class="card mt-2">
+    <div class="card-header">Application Logs</div>
+    <div class="card-body">
+      <table class="table table-bordered table-sm">
+        <thead class="thead-light">
+        <tr>
+          <th scope="col" class="dk-time" >Time</th>
+          <th scope="col" class="dk-type">Type</th>
+          <th scope="col">Message</th>
+          <th scope="col" class="dk-icon-detail">Detail</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr *ngFor="let log of jobOccurrence.applicationLog">
+          <td class="dk-time">{{toLocaleString(log.time)}}</td>
+          <td class="dk-type" [ngClass]="messageTypes[log.message.msgType].color">{{messageTypes[log.message.msgType].text}}</td>
+          <td>{{log.message.msgShortText}}</td>
+          <td class="dk-icon-detail">
+            <button title="Detail" id="detail" class="btn btn-sm" type="button" (click)="openLongMessage(log)">
+              <span class="fas fa-info-circle"></span>
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
+<div class="modal fade" id="parametersModal" tabindex="-1" role="dialog"
+     [ngClass]="{'show': isParametersModalShown}"
+     [ngStyle]="{'display': displayParametersModal}">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="parametersTitle">Parameters</h5>
+        <button type="button" class="close" (click)="closeParameters()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body container-fluid dk-scroll-area">
+        <app-job-parameters [parameterDefinitions]="currentParamDefinitions"
+                            [currentJobStep]="currentJobStep"
+                            [readonly]=true>
+        </app-job-parameters>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-primary" (click)="closeParameters()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="outputModal" tabindex="-1" role="dialog"
+     [ngClass]="{'show': isOutputModalShown}"
+     [ngStyle]="{'display': displayOutputModal}">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="outputTitle">Output</h5>
+        <button type="button" class="close" (click)="closeOutput()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body container-fluid dk-scroll-area" [innerHtml]="currentOutput">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-primary" (click)="closeOutput()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="longMessageModal" tabindex="-1" role="dialog"
+     [ngClass]="{'show': isLongMessageShown}"
+     [ngStyle]="{'display': displayLongMessageModal}">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="longMessageTitle">Long Message</h5>
+        <button type="button" class="close" (click)="closeLongMessage()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body container-fluid dk-scroll-area" [innerHtml]="currentLongMessage">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-primary" (click)="closeLongMessage()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="startConditionModal" tabindex="-1" role="dialog"
+     [ngClass]="{'show': isStartConditionShown}"
+     [ngStyle]="{'display': displayStartConditionModal}">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="startConditionTitle">Start Condition</h5>
+        <button type="button" class="close" (click)="closeStartCondition()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div *ngIf="reducedMainForm" class="modal-body container-fluid dk-scroll-area">
+        <app-job-start-condition [mainForm]="reducedMainForm" [readonly]="true">
+        </app-job-start-condition>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-primary" (click)="closeStartCondition()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

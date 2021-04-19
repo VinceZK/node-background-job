@@ -6,6 +6,7 @@ export const router = express.Router();
 router.post('/api/jobs', JobCtrl.createJob);
 router.put('/api/jobs', JobCtrl.changeJob);
 router.get('/api/jobs/:name', JobCtrl.getJob);
+router.get('/api/jobs/:name/status', JobCtrl.getJobStatus);
 router.post('/api/jobs/schedule', JobCtrl.scheduleJobs);
 router.post('/api/jobs/cancel', JobCtrl.cancelJobs);
 router.get('/api/jobs', JobCtrl.searchJobs);

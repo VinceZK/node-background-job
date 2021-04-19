@@ -22,8 +22,10 @@ export class JobOccurrence {
   uuid!: string;
   jobName!: string;
   status!: number;
+  identity?: Identity;
   steps!: Step[];
   startCondition!: StartCondition;
+  outputSetting?: OutputSetting;
   scheduledDateTime!: string;
   actualStartDateTime?: string;
   endDateTime?: string;

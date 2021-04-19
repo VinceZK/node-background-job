@@ -30,8 +30,8 @@ export class JobStartConditionComponent implements OnInit {
   }
 
   onChangeSpecificDate(newDate: Date): void {
-    const mySQLDateStr = newDate.getFullYear().toString() + '-' + ('0' + (newDate.getMonth() + 1)).slice(-2)
-      + '-' + ('0' + (newDate.getDate())).slice(-2) + ` ` + newDate.toTimeString().slice(0, 5);
+    const mySQLDateStr = newDate.toISOString().slice(0, 19).replace('T', ' ');
+
     this.jobStartConditionFormGroup.get('specificTime')?.setValue(mySQLDateStr);
     this.jobStartConditionFormGroup.get('specificTime')?.markAsDirty();
   }

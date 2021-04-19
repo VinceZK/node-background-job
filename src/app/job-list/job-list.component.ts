@@ -11,20 +11,26 @@ import {JobService} from '../job.service';
   styleUrls: ['./job-list.component.css']
 })
 export class JobListComponent implements OnInit {
-
   jobName = '';
   program = '';
   jobs: Job[] = [];
-  status = [true, true, true, true];
+  status = [true, true, true];
   mode = [true, true, true, false];
   showCancelConfirmation = false;
   toBeCanceledJobName = '';
+  jobStatuses: string[];
+  jobStatusColors: string[];
+  jobModes: string[];
 
   get displayCancelConfirmation() {return this.showCancelConfirmation ? 'block' : 'none'; }
 
   constructor(private jobService: JobService,
               private messageService: MessageService,
-              private router: Router) { }
+              private router: Router) {
+    this.jobStatuses = this.jobService.jobStatuses;
+    this.jobStatusColors = this.jobService.jobStatusColors;
+    this.jobModes = this.jobService.jobModes;
+  }
 
   ngOnInit() {
   }
@@ -63,35 +69,6 @@ export class JobListComponent implements OnInit {
     }
   }
 
-  jobMode(mode: number): string {
-    switch (mode) {
-      case 0:
-        return 'Immediately';
-      case 1:
-        return 'Specific-time';
-      case 2:
-        return 'Recursively';
-      case 3:
-        return 'Event-based';
-      default:
-        return '';
-    }
-  }
-
-  jobStatus(status: number): string {
-    switch (status) {
-      case 0:
-        return 'Initial';
-      case 1:
-        return 'Ready';
-      case 2:
-        return 'Completed';
-      case 3:
-        return 'Canceled';
-      default:
-        return '';
-    }
-  }
   new(): void {
     this.router.navigate(['jobs', '/', {action: 'new'}]);
   }

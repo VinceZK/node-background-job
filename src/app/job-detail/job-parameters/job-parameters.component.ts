@@ -29,6 +29,7 @@ export class JobParametersComponent implements OnInit, OnChanges {
     this.groups = [];
     this.parameters = [];
     this.paramFormGroup = this.fb.group({});
+    if (!this.parameterDefinitions) { return; }
     for (const [groupName, parameterDefinition] of Object.entries(this.parameterDefinitions)) {
       this.groups.push({
         name: groupName,

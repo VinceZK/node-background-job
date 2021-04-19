@@ -98,8 +98,7 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   }
 
   _convert2MySQLDateTime(date: Date): string {
-    return date.getFullYear().toString() + '-' + ('0' + (date.getMonth() + 1)).slice(-2)
-      + '-' + ('0' + (date.getDate())).slice(-2) + ` ` + date.toTimeString().slice(0, 5);
+    return date.toISOString().slice(0, 19).replace('T', ' ');
   }
 
   updateMainForm(): void {

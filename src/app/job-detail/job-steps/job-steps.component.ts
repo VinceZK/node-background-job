@@ -16,6 +16,7 @@ export class JobStepsComponent implements OnInit {
   @Input() readonly!: boolean;
   @Input() mainForm!: FormGroup;
   jobStepFormArray!: FormArray;
+  jobOutputSetting!: FormGroup;
   currentJobStep!: FormGroup;
   currentParamDefinitions?: ParameterDefinitions;
   currentJobProgramDesc?: string;
@@ -35,6 +36,7 @@ export class JobStepsComponent implements OnInit {
 
   ngOnInit(): void {
     this.jobStepFormArray = this.mainForm.get('steps') as FormArray;
+    this.jobOutputSetting = this.mainForm.get('outputSetting') as FormGroup;
   }
 
   castFormGroup(ctrl: AbstractControl): FormGroup {

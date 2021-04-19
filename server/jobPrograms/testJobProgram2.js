@@ -7,7 +7,7 @@ export default class TestJobProgram2 extends JobProgram {
     return new Promise( (resolve, reject) => {
       setTimeout( () => {
         console.log(this.name, this.parameters);
-        if (this.parameters.param1 === 'value1'){
+        if (this.parameters.PARAM1 === 'value1'){
           applicationLog.info('application log 1');
           reject(new Error('error happened in testJobProgram'));
         } else {

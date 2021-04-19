@@ -25,5 +25,4 @@ export class AdminComponent implements OnInit {
     // @ts-ignore
     return this.jobAttrCtrls.find( attrCtrl => attrCtrl.name === fieldName);
   }
-
 }

@@ -1,0 +1,36 @@
+.dk-icon-para{
+  width: 7rem;
+  min-width: 7rem;
+  max-width: 7rem;
+  text-align: center;
+}
+.dk-icon-output{
+  width: 5rem;
+  min-width: 5rem;
+  max-width: 5rem;
+  text-align: center;
+}
+.dk-icon-detail{
+  width: 4rem;
+  min-width: 4rem;
+  max-width: 4rem;
+  text-align: center;
+}
+.dk-status{
+  width: 6rem;
+  min-width: 6rem;
+  max-width: 6rem;
+}
+.dk-time{
+  width: 12rem;
+  min-width: 12rem;
+  max-width: 12rem;
+}
+.dk-type{
+  width: 6rem;
+  min-width: 6rem;
+  max-width: 6rem;
+}
+.dk-collapse-btn{
+  padding: 0 0;
+}
