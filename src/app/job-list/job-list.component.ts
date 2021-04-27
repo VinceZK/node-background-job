@@ -20,6 +20,7 @@ export class JobListComponent implements OnInit {
   toBeCanceledJobName = '';
   jobStatuses: string[];
   jobStatusColors: string[];
+  occStatusColors: string[];
   jobModes: string[];
 
   get displayCancelConfirmation() {return this.showCancelConfirmation ? 'block' : 'none'; }
@@ -29,14 +30,17 @@ export class JobListComponent implements OnInit {
               private router: Router) {
     this.jobStatuses = this.jobService.jobStatuses;
     this.jobStatusColors = this.jobService.jobStatusColors;
+    this.occStatusColors = this.jobService.occStatusColors;
     this.jobModes = this.jobService.jobModes;
   }
 
   ngOnInit() {
   }
 
-  search() {
-    this.messageService.clearMessages();
+  search(clearMsg= true) {
+    if (clearMsg) {
+      this.messageService.clearMessages();
+    }
     this.jobs = [];
     this.jobName = this.jobName ? this.jobName.trim() : '';
     this.program = this.program ? this.program.trim() : '';
@@ -96,7 +100,7 @@ export class JobListComponent implements OnInit {
         this.showCancelConfirmation = false;
         const messages = <Message[]>data;
         messages.forEach( msg => this.messageService.add(msg));
-        this.search();
+        this.search(false);
     });
   }
 

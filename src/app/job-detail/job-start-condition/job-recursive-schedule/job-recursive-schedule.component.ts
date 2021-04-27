@@ -10,7 +10,7 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   currentSection = 0; // 0: seconds, 1: minutes, 2: hours, 3: day of month, 4: month, 5: day of week
   isDocumentationOpen = false;
   cronArray!: string[];
-  cronArrayAt = ['*', '*', '*', '*', '*', '*'];
+  cronArrayAt = ['0', '*', '*', '*', '*', '*'];
   cronArrayEvery = [0, 0, 0, 0, 0, 0];
   cronString = '';
   cronCurrentDate!: Date;
@@ -28,7 +28,7 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(): void {
-    this.cronString = this.startConditionForm.get('cronString')?.value || '* * * * * *';
+    this.cronString = this.startConditionForm.get('cronString')?.value || '0 * * * * *';
     if (this.startConditionForm.get('cronCurrentDate')?.value) {
       // @ts-ignore
       this.cronCurrentDate = new Date(this.startConditionForm.get('cronCurrentDate')?.value + ' UTC');

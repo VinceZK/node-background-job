@@ -125,22 +125,33 @@ export default class JobCtrl{
         .catch( errors => res.json(errors))
     } else {
       const jobs = Job.getJobs(filter);
-      jobs.forEach( job => {
-        job.mode = job.startCondition.mode;
-        job.description = job.description.DEFAULT;
-        delete job.instance;
-      });
-      res.json(jobs);
+      res.json(jobs.map( job => {
+        return {
+          name: job.name,
+          description: job.description,
+          status: job.status,
+          mode: job.startCondition.mode,
+          identity: job.identity,
+          steps: job.steps,
+          startCondition: job.startCondition,
+          outputSetting: job.outputSetting,
+          finishedOccurrences: job.finishedOccurrences,
+          failedOccurrences: job.failedOccurrences,
+          canceledOccurrences: job.canceledOccurrences,
+          createdBy: job.createdBy,
+          createTime: job.createTime,
+          lastChangedBy: job.lastChangedBy,
+          lastChangeTime: job.lastChangeTime,
+        }
+      }));
     }
   }
 
   static cancelJobs(req, res) {
     const jobNames = req.body;
-    let iterator = jobNames.map( jobName => {
-      return async () => {
-        await Job.getJob(jobName).instance.cancel();
-        return jobName;
-      }
+    let iterator = jobNames.map( async (jobName) => {
+      await Job.getJob(jobName).instance.cancel();
+      return jobName;
     });
     Promise.all(iterator)
       .then((jobNames)=>{
@@ -174,23 +185,16 @@ export default class JobCtrl{
         .catch( errors => res.json(errors))
     } else {
       const occurrences = JobOccurrence.getOccurrences(filter);
-      const results = [];
-      occurrences.forEach( occurrence => {
-        results.push({
+      res.json(occurrences.map(occurrence => {
+        return {
           uuid: occurrence.uuid,
-          status: occurrence.status,
           jobName: occurrence.jobName,
-          scheduledDateTime: occurrence.scheduledDateTime,
+          status: occurrence.status,
           actualStartDateTime: occurrence.actualStartDateTime,
           endDateTime: occurrence.endDateTime,
-          identity: occurrence.identity,
-          steps: occurrence.steps,
-          startCondition: occurrence.startCondition,
-          outputSetting: occurrence.outputSetting,
-          applicationLog: occurrence.applicationLog
-        })
-      });
-      res.json(results);
+          scheduledDateTime: occurrence.scheduledDateTime
+        }
+      }));
     }
   }
 
@@ -224,12 +228,10 @@ export default class JobCtrl{
 
   static cancelOccurrences(req, res) {
     const occurrenceUUIDs = req.body;
-    let iterator = occurrenceUUIDs.map( uuid => {
-      return async () => {
+    let iterator = occurrenceUUIDs.map( async (uuid) => {
         let occurrence = JobOccurrence.getOccurrence(uuid);
         await occurrence.instance.cancel();
         return occurrence;
-      }
     });
     Promise.all(iterator)
       .then((occurrence)=>{

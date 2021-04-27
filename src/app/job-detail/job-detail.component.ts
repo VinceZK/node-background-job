@@ -2,21 +2,13 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import {FormArray, FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {JobService} from '../job.service';
-import {
-  AttributeBase,
-  AttributeControlService,
-  EntityService,
-  RelationMeta,
-  UiMapperService
-} from 'jor-angular';
 import {DialogService} from '../dialog.service';
 import {MessageService, Message} from 'ui-message-angular';
 import {switchMap} from 'rxjs/operators';
-import {forkJoin, Observable, of} from 'rxjs';
+import {Observable, of} from 'rxjs';
 import {Job} from '../job-types';
 import {existingJobNameValidator} from '../async-validators';
 import {JobStartConditionComponent} from './job-start-condition/job-start-condition.component';
-import {JobOccurrencesComponent} from './job-occurrences/job-occurrences.component';
 
 @Component({
   selector: 'app-job-detail',
@@ -26,18 +18,19 @@ import {JobOccurrencesComponent} from './job-occurrences/job-occurrences.compone
 export class JobDetailComponent implements OnInit {
   mainForm!: FormGroup;
   textForm!: FormGroup;
-  relationMetas!: RelationMeta[];
-  jobAttrCtrls!: AttributeBase[];
-  jobTextCtrls!: AttributeBase[];
   readonly = true;
   isNewMode = false;
   action!: string | null;
   originalValue!: Job;
   changedValue!: Job;
-  tabStrip = 3;
+  tabStrip = 1;
   workInProgress = false;
   jobStatuses: string[];
   jobStatusColors: string[];
+  showScheduleConfirmation = false;
+  showChangeConfirmation = false;
+  showCancelConfirmation = false;
+  displayStatistics = '';
 
   @ViewChild(JobStartConditionComponent)
   jobStartConditionComponent!: JobStartConditionComponent;
@@ -47,14 +40,15 @@ export class JobDetailComponent implements OnInit {
     return stepsArray.length;
   }
 
+  get displayScheduleConfirmation(): string {return this.showScheduleConfirmation ? 'block' : 'none'; }
+  get displayChangeConfirmation(): string {return this.showChangeConfirmation ? 'block' : 'none'; }
+  get displayCancelConfirmation(): string {return this.showCancelConfirmation ? 'block' : 'none'; }
+
   constructor(private fb: FormBuilder,
               private route: ActivatedRoute,
               private router: Router,
               private dialogService: DialogService,
               private jobService: JobService,
-              private attributeControlService: AttributeControlService,
-              private entityService: EntityService,
-              private uiMapperService: UiMapperService,
               private messageService: MessageService) {
     this.jobStatuses = this.jobService.jobStatuses;
     this.jobStatusColors = this.jobService.jobStatusColors;
@@ -66,28 +60,19 @@ export class JobDetailComponent implements OnInit {
         this.action = params.get('action');
         if (this.action === 'new') {
           this.isNewMode = true;
-          return forkJoin([
-            this.entityService.getRelationMetaOfEntity('job'),
-            this._createNewEntity()
-          ]);
+          return this._createNewEntity();
         } else {
           this.isNewMode = false;
-          return forkJoin([
-            this.entityService.getRelationMetaOfEntity('job'),
-            this.jobService.getJob(params.get('name'))
-          ]);
+          if (this.action === 'displayFinished' || this.action === 'displayFailed' || this.action === 'displayCanceled') {
+            this.tabStrip = 3;
+            this.displayStatistics = this.action;
+          }
+          return this.jobService.getJob(params.get('name'));
         }
       })
     ).subscribe( data => {
-      this.relationMetas = data[0] as RelationMeta[];
-      this.jobAttrCtrls = this.attributeControlService.toAttributeControl(
-        // @ts-ignore
-        this.relationMetas.find( relationMeta => relationMeta.RELATION_ID === 'job').ATTRIBUTES);
-      this.jobTextCtrls = this.attributeControlService.toAttributeControl(
-        // @ts-ignore
-        this.relationMetas.find( relationMeta => relationMeta.RELATION_ID === 'r_text').ATTRIBUTES);
-      if ('name' in data[1]) {
-        this._generateMainForm(data[1] as Job);
+      if ('name' in data) {
+        this._generateMainForm(data as Job);
         if (this.isNewMode || this.action === 'change') {
           this._switch2EditMode();
         } else {
@@ -95,15 +80,10 @@ export class JobDetailComponent implements OnInit {
         }
       } else {
         // @ts-ignore
-        const errorMessages = data[1] as Message[];
+        const errorMessages = data as Message[];
         errorMessages.forEach( msg => this.messageService.add(msg));
       }
     });
-  }
-
-  getJobAttrCtrlFromID(fieldName: string): AttributeBase {
-    // @ts-ignore
-    return this.jobAttrCtrls.find( attrCtrl => attrCtrl.name === fieldName);
   }
 
   switchTabStrip(tabStripID: number): void {
@@ -125,7 +105,7 @@ export class JobDetailComponent implements OnInit {
     this.jobService.getJobStatus(this.originalValue.name)
       .subscribe( status => {
         const currentStatus = this.mainForm.get('status')?.value;
-        if (status !== null && currentStatus !== status) {
+        if (status !== null && currentStatus === 1) {
           this.mainForm.get('status')?.setValue(status);
           if (this.tabStrip === 3) {
             this.tabStrip = 0;
@@ -223,18 +203,20 @@ export class JobDetailComponent implements OnInit {
         console2ApplicationLog: [data.outputSetting?.console2ApplicationLog]
       })
     });
-    if (data.description) {
-      this.textForm = this.fb.group({});
-      for ( const[key, value] of Object.entries(data.description) ) {
-        this.textForm.addControl(key, this.fb.control(value));
-      }
-      this.mainForm.addControl('description', this.textForm);
+
+    this.textForm = this.fb.group({});
+    if (!data.description) {
+      data.description = {DEFAULT: ''};
     }
-    if (data.identity) {
-      this.mainForm.addControl('identity', this.fb.group({
-        id: [data.identity.id]
-      }));
+    for ( const[key, value] of Object.entries(data.description) ) {
+      this.textForm.addControl(key, this.fb.control(value));
     }
+    this.mainForm.addControl('description', this.textForm);
+
+    this.mainForm.addControl('identity', this.fb.group({
+      id: [data.identity ? data.identity.id : '']
+    }));
+
     this.mainForm.addControl('steps',
       // @ts-ignore
       this.fb.array(data.steps.map(step => this.fb.group({
@@ -244,8 +226,12 @@ export class JobDetailComponent implements OnInit {
     this.originalValue = this.mainForm.getRawValue();
   }
 
-  save(): void {
+  save(needConfirm: boolean = true): void {
     this.messageService.clearMessages();
+    if (needConfirm && !this.isNewMode ) {
+      this.showChangeConfirmation = true;
+      return;
+    }
     this.workInProgress = true;
     if (this._composeChanges()) {
       this.jobService.saveJob(this.isNewMode, this.changedValue).subscribe( data => {
@@ -253,10 +239,22 @@ export class JobDetailComponent implements OnInit {
         messages.forEach( msg => this.messageService.add(msg));
         if (messages[0].msgName === 'JOB_IS_SAVED') {
           this._retrieveUpdatedValue();
+          if (this.isNewMode) {
+            this.showScheduleConfirmation = true;
+          }
         }
         this.workInProgress = false;
       });
     }
+  }
+
+  change(): void {
+    this.save(false);
+    this.showChangeConfirmation = false;
+  }
+
+  cancelChange(): void {
+    this.showChangeConfirmation = false;
   }
 
   schedule(): void {
@@ -269,7 +267,30 @@ export class JobDetailComponent implements OnInit {
         this._retrieveUpdatedValue();
       }
       this.workInProgress = false;
+      this.showScheduleConfirmation = false;
     });
+  }
+
+  cancelSchedule(): void {
+    this.showScheduleConfirmation = false;
+  }
+
+  cancelJob(): void {
+    this.showCancelConfirmation = true;
+  }
+
+  cancelCancelJob(): void {
+    this.showCancelConfirmation = false;
+  }
+
+  confirmCancelJob(): void {
+    this.jobService.cancelJobs([this.mainForm.get('name')?.value])
+      .subscribe( data => {
+        this.showCancelConfirmation = false;
+        const messages = data as Message[];
+        messages.forEach( msg => this.messageService.add(msg));
+        this.refresh();
+      });
   }
 
   _composeChanges(): boolean {

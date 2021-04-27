@@ -4,7 +4,8 @@
   </div>
 
   <div class="flex-row-reverse">
-    <button class="btn btn-sm btn-light mr-2" type="button" title="Return to List" id="refresh"
+    <button *ngIf="mainForm?.get('status')?.value === 1"
+            class="btn btn-sm btn-light mr-2" type="button" title="Return to List" id="refresh"
             (click)="refresh()" >
       <span class="fas fa-sync-alt"></span>
     </button>
@@ -18,13 +19,19 @@
       <span *ngIf="readonly" class="fas fa-edit"> Edit</span>
       <span *ngIf="!readonly" class="fas fa-glasses"> Display</span>
     </button>
+    <button *ngIf="!isNewMode && mainForm?.get('status')?.value < 2"
+            class="btn btn-sm btn-outline-secondary mr-2" type="button" title="Schedule Job" id="cancel"
+            (click)="cancelJob()">
+      <span class="fas fa-times-circle"> Cancel</span>
+    </button>
+    <button *ngIf="!isNewMode && mainForm?.get('status')?.value === 0"
+            class="btn btn-sm btn-outline-success mr-2" type="button" title="Schedule Job" id="schedule"
+            (click)="schedule()">
+      <span class="fas fa-calendar-plus"> Schedule</span>
+    </button>
     <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Save" id="save"
             (click)="save()" [disabled]="readonly">
       <span class="fas fa-save"> Save</span>
-    </button>
-    <button class="btn btn-sm btn-outline-primary mr-2" type="button" title="Schedule Job" id="schedule"
-            (click)="schedule()" [disabled]="mainForm?.get('status')?.value !== 0">
-      <span class="fas fa-calendar-plus"> Schedule</span>
     </button>
   </div>
 </nav>
@@ -42,16 +49,16 @@
   </div>
 
   <div class="mt-2 ml-1 row">
-    <dk-app-attribute-form2 class="col-md-6 col-lg-4"
-                            [attributeControl]="getJobAttrCtrlFromID('name')"
-                            [formGroup]="mainForm"
-                            [readonly]="!isNewMode || readonly"
-                            [isSmallSize] = "true">
-    </dk-app-attribute-form2>
+    <div class="form-group col-md-6 col-lg-4" [formGroup]="mainForm">
+      <label for="description" class="col-form-label form-control-sm">Job Name:
+      </label>
+      <input class="form-control form-control-sm" id="jobName" name="jobName"
+                formControlName="name" [readonly]="readonly">
+    </div>
     <div class="form-group col-md-6 col-lg-4" [formGroup]="textForm">
       <label for="description" class="col-form-label form-control-sm">Description:
       </label>
-      <textarea class="form-control" id="description" name="description" rows="1"
+      <textarea class="form-control form-control-sm" id="description" name="description" rows="1"
                 formControlName="DEFAULT" [readonly]="readonly"></textarea>
     </div>
     <div class="col-md-6 col-lg-4">
@@ -80,7 +87,71 @@
   <div class="mt-2" [ngSwitch]="tabStrip">
     <app-job-steps *ngSwitchCase="1" [mainForm]="mainForm" [readonly]="readonly"></app-job-steps>
     <app-job-start-condition *ngSwitchCase="2" [mainForm]="mainForm" [readonly]="readonly"></app-job-start-condition>
-    <app-job-occurrences *ngSwitchCase="3" [mainForm]="mainForm" [readonly]="readonly"></app-job-occurrences>
-    <app-admin *ngSwitchCase="4" [mainForm]="mainForm" [relationMetas]="relationMetas"></app-admin>
+    <app-job-occurrences *ngSwitchCase="3" [mainForm]="mainForm" [displayStatistics]="displayStatistics" [readonly]="readonly"></app-job-occurrences>
+    <app-admin *ngSwitchCase="4" [mainForm]="mainForm"></app-admin>
+  </div>
+</div>
+
+<div class="modal" [class.show]="showScheduleConfirmation"
+     [ngStyle]="{'display': displayScheduleConfirmation}" id="scheduleConfirmation" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmSchedule">Schedule the Job?</h5>
+        <button type="button" class="close" (click)="cancelSchedule()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Do you want to schedule the job right now?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" (click)="cancelSchedule()">No</button>
+        <button type="button" class="btn btn-sm btn-primary" (click)="schedule()">Yes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" [class.show]="showChangeConfirmation"
+     [ngStyle]="{'display': displayChangeConfirmation}" id="changeConfirmation" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmChange">Confirm the Change?</h5>
+        <button type="button" class="close" (click)="cancelChange()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Changing of a scheduled job will cancel all its ready occurrences, and then re-schedule them.</p>
+        <p>Do you want to process?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" (click)="cancelChange()">No</button>
+        <button type="button" class="btn btn-sm btn-primary" (click)="change()">Yes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" [class.show]="showCancelConfirmation"
+     [ngStyle]="{'display': displayCancelConfirmation}" id="cancelConfirmation" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmCancel">Cancel the Job?</h5>
+        <button type="button" class="close" (click)="cancelCancelJob()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure to cancel the job?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" (click)="cancelCancelJob()">No</button>
+        <button type="button" class="btn btn-sm btn-primary" (click)="confirmCancelJob()">Yes</button>
+      </div>
+    </div>
   </div>
 </div>

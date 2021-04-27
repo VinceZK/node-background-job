@@ -90,11 +90,14 @@ export default class Job {
     newJob.INSTANCE_GUID = oldJobGUID;
 
     if (process.env.USE_DB !== 'true') {
+      if (oldJobEntry.status === JobStatusEnum.completed) { // The old job is already cancelled
+        await newJob.scheduleOccurrences();
+      }
       return changedJobDefinition;
     }
     try {
       await newJob.changeJobDB();
-      if (oldJobEntry.status === JobStatusEnum.completed) {
+      if (oldJobEntry.status === JobStatusEnum.completed) { // The old job is already cancelled
         await newJob.scheduleOccurrences();
       }
       return changedJobDefinition;
@@ -582,11 +585,11 @@ export default class Job {
         return scheduledDateTime < this.startDateTime;
       case StartConditionEnum.recurrently:
         const cronOption = {
-          currentDate: scheduledDateTime,
+          currentDate: scheduledDateTime.toISOString().slice(0, 19).replace('T', ' '),
           endDate: this.startCondition.cronEndDate,
           tz: this.startCondition.tz
         };
-        let interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);
+        const interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);
         return interval.hasNext();
       case StartConditionEnum.onEvent:
       default:
@@ -715,7 +718,10 @@ export default class Job {
     // Even the last occurrence is canceled, we won't re-schedule it.
     // Only to find the next occurrence of the last scheduled one.
     let lastScheduledOccurrence = JobOccurrence.getLastScheduledOccurrence(this.name);
-    if (lastScheduledOccurrence) { start = new Date(lastScheduledOccurrence.scheduledDateTime + ' UTC');}
+    if (lastScheduledOccurrence) {
+      start = new Date(lastScheduledOccurrence.scheduledDateTime + ' UTC');
+      start.setSeconds(start.getSeconds() + 1); // Add 1 second to avoid duplicate scheduling
+    }
     let end = endDateTime? endDateTime : this.endDateTime;
     if (this.endDateTime && end > this.endDateTime) {
       end = this.endDateTime;

@@ -9,22 +9,36 @@ export default class Scheduler {
   static #intervalHrs = 24;
   static previousPIDs = [];
 
+  /**
+   * Get previous process IDs on the server.
+   * @returns {Promise<unknown>}
+   */
   static async getPreviousPIDs() {
-    const selectSQL = 'select distinct jobNode from job where jobServer = ' + EntityDB.pool.escape(process.env.JOB_SERVER);
-    return new Promise((resolve, reject) => {
-      EntityDB.executeSQL(selectSQL, (errors, results)=> {
-        if (errors) {
-          reject(errors);
-        } else {
-          this.previousPIDs = results.map( data => data.jobNode );
-          resolve( this.previousPIDs.length );
-        }
-      })
-    });
+    if (process.env.USE_DB === 'true') {
+      const selectSQL = 'select distinct jobNode from job where jobServer = ' + EntityDB.pool.escape(process.env.JOB_SERVER);
+      return new Promise((resolve, reject) => {
+        EntityDB.executeSQL(selectSQL, (errors, results) => {
+          if (errors) {
+            reject(errors);
+          } else {
+            this.previousPIDs = results.map(data => data.jobNode);
+            resolve(this.previousPIDs.length);
+          }
+        })
+      });
+    } else {
+      return new Promise( resolve => resolve(0));
+    }
   }
 
+  /**
+   * Switch on the scheduler
+   * @returns {Promise<void>}
+   */
   static async on() {
-    await this.#recoverActiveJobs();
+    if (process.env.USE_DB === 'true') {
+      await this.#recoverActiveJobs();
+    }
     let end = new Date();
     end.setHours(end.getHours() + this.#intervalHrs);
     // The persisted occurrences may already missed. For example, restarting the server after the '#intervalHrs'.
@@ -47,7 +61,8 @@ export default class Scheduler {
         if (activeJob.status === JobStatusEnum.scheduled) {
           const jobOccurrences = await this.#getActiveJobOccurrence(activeJob.name, now);
           for (const jobOccurrence of jobOccurrences) {
-            const jobOcc = new JobOccurrence(job, jobOccurrence.scheduledDateTime, jobOccurrence.INSTANCE_GUID);
+            const scheduledDateTime = new Date(jobOccurrence.scheduledDateTime + ' UTC');
+            const jobOcc = new JobOccurrence(job, scheduledDateTime, jobOccurrence.INSTANCE_GUID, jobOccurrence.uuid);
             await jobOcc.setReady();
           }
           const canceledOccNum = await this.#cancelPassedOccurrences(activeJob.name, now);
@@ -105,8 +120,9 @@ export default class Scheduler {
   }
 
   static async #getActiveJobOccurrence(jobName, now) {
-    const selectSQL = 'select scheduledDateTime, INSTANCE_GUID from jobOccurrence' +
+    const selectSQL = 'select scheduledDateTime, INSTANCE_GUID, uuid from jobOccurrence' +
       ' where jobName = ' +  EntityDB.pool.escape(jobName) +
+      '   and status = ' + EntityDB.pool.escape(OccurrenceStatusEnum.ready) +
       '   and scheduledDateTime >= ' + EntityDB.pool.escape(now);
     return new Promise((resolve, reject) => {
       EntityDB.executeSQL(selectSQL, (error, results)=> {

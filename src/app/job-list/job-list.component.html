@@ -80,17 +80,31 @@
       <td>{{job.description?.DEFAULT}}</td>
       <td [class]="jobStatusColors[job.status]">{{jobStatuses[job.status]}}</td>
       <td>{{jobModes[job.mode]}}</td>
-      <td>{{job.finishedOccurrences}}</td>
-      <td>{{job.failedOccurrences}}</td>
-      <td>{{job.canceledOccurrences}}</td>
+      <td class="dk-statistic">
+        <a [routerLink]="['/jobs', job.name, {action: 'displayFinished'}]" [class]="occStatusColors[3]">
+          {{job.finishedOccurrences}}
+        </a>
+      </td>
+      <td class="dk-statistic">
+        <a [routerLink]="['/jobs', job.name, {action: 'displayFailed'}]" [class]="occStatusColors[4]">
+          {{job.failedOccurrences}}
+        </a>
+      </td>
+      <td class="dk-statistic">
+        <a [routerLink]="['/jobs', job.name, {action: 'displayCanceled'}]" [class]="occStatusColors[5]">
+          {{job.canceledOccurrences}}
+        </a>
+      </td>
       <td class="dk-actions">
         <button title="Display" id="display" class="btn btn-sm" type="button" (click)="display(job.name)">
           <span class="fas fa-search"></span>
         </button>
-        <button title="Change" id="change" class="btn btn-sm" type="button" (click)="change(job.name)">
+        <button title="Change" id="change" class="btn btn-sm" type="button"
+                (click)="change(job.name)" [disabled]="job.status === 2">
           <span class="fas fa-pen"></span>
         </button>
-        <button title="Cancel" id="cancel" class="btn btn-sm" type="button" (click)="cancel(job.name)">
+        <button title="Cancel" id="cancel" class="btn btn-sm" type="button"
+                (click)="cancel(job.name)" [disabled]="job.status === 2">
           <span class="far fa-times-circle"></span>
         </button>
       </td>
@@ -100,7 +114,7 @@
 
   <div class="modal" [class.show]="showCancelConfirmation"
        [ngStyle]="{'display': displayCancelConfirmation}" id="deletionConfirmation" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-md modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="confirmDeletion">Confirm Cancel?</h5>

@@ -19,13 +19,13 @@ export default class JobOccurrence {
   }
 
   /**
-   * Get an occurrence from DB by UUID
+   * Get an occurrence from DB by uuid
    * @param uuid
    * @returns JobOccurrence
    */
   static getOccurrenceDB(uuid) {
     return new Promise( (resolve, reject) => {
-      jor.Entity.getInstanceByGUID(uuid, (errs, result) => {
+      jor.Entity.getInstanceByID({RELATION_ID: 'jobOccurrence', uuid: uuid}, (errs, result) => {
         if (errs) {
           reject(errs);
         } else {
@@ -128,12 +128,12 @@ export default class JobOccurrence {
           reject(errs);
         } else {
           resolve(rows.map( row => { return {
-            uuid: row.INSTANCE_GUID,
+            uuid: row.uuid,
+            jobName: row.jobName,
+            status: row.status,
             actualStartDateTime: row.actualStartDateTime,
             endDateTime: row.endDateTime,
-            jobName: row.jobName,
-            scheduledDateTime: row.scheduledDateTime,
-            status: row.status
+            scheduledDateTime: row.scheduledDateTime
           }}));
         }
       });
@@ -148,19 +148,23 @@ export default class JobOccurrence {
   static getLastScheduledOccurrence(jobName) {
     let lastScheduledTime = 0;
     this.#occurrences.forEach( occurrence => {
-      if (occurrence.jobName === jobName) {
+      if (occurrence.jobName === jobName && occurrence.status < OccurrenceStatusEnum.canceled) {
         if(new Date(occurrence.scheduledDateTime) > new Date(lastScheduledTime)) {
           lastScheduledTime = occurrence.scheduledDateTime ;
         }
       }
     });
+
     return this.#occurrences.find( occurrence =>
       occurrence.jobName === jobName &&
       occurrence.scheduledDateTime === lastScheduledTime)
   }
 
   static assignSteps(source, target) {
-    source.forEach( step => target.push({...step}));
+    source.forEach( step => target.push({
+      program: step.program,
+      parameters: typeof step.parameters === 'string' ? JSON.parse(step.parameters) : step.parameters
+    }));
   }
 
   static assignStartCondition(source, target) {
@@ -175,9 +179,10 @@ export default class JobOccurrence {
    * @param job: Job
    * @param scheduledDateTime: Date()
    * @param INSTANCE_GUID: in case using DB persistence, INSTANCE_GUID should be given during recovering
+   * @param occUUID: job occurrence uuid, needed for recovering
    */
-  constructor(job, scheduledDateTime, INSTANCE_GUID) {
-    this.uuid = uuid();
+  constructor(job, scheduledDateTime, INSTANCE_GUID, occUUID) {
+    this.uuid = occUUID || uuid();
     this.job = job;
     this.jobName = job.name;
     this.description = { ...job.description };
@@ -205,11 +210,13 @@ export default class JobOccurrence {
       uuid: this.uuid,
       jobName: this.jobName,
       status: OccurrenceStatusEnum.initial,
+      identity: { ...this.identity },
       steps: [],
       startCondition: {},
       scheduledDateTime: this.scheduledDateTime.toISOString().slice(0, 19).replace('T', ' '),
       actualStartDateTime: 0,
       endDateTime: 0,
+      outputSetting: { ...this.outputSetting },
       applicationLog: [],
       instance: this
     };
@@ -225,7 +232,7 @@ export default class JobOccurrence {
   async persistJobOccurrence() {
     const occInstance = {ENTITY_ID: 'jobOccurrence'};
     occInstance.jobOccurrence = [
-      { uuid:this.entry.uuid,
+      { uuid: this.entry.uuid,
         jobName: this.entry.jobName,
         status: this.entry.status,
         scheduledDateTime: this.entry.scheduledDateTime,
@@ -379,6 +386,9 @@ export default class JobOccurrence {
       } catch (e) {
         step.status = OccurrenceStatusEnum.failed;
         await this.#updateStatus(OccurrenceStatusEnum.failed);
+        if (this.outputSetting.console2ApplicationLog) {
+          this.#restoreConsoleFromApplicationLog();
+        }
         throw e;
       }
     }

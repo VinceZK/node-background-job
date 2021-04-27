@@ -264,8 +264,8 @@ describe('Job Class tests',  () => {
           should(jobEntry.instance).not.be.ok;
           jobOccurrenceEntry.status.should.eql(OccurrenceStatusEnum.failed);
           jobOccurrenceEntry.applicationLog.should.containDeep([
-            { message: { msgShortText: 'application log 1', msgLongText: 'application log 1', msgType: 'I'}},
-            { message: { msgShortText: 'error happened', msgLongText: 'error happened', msgType: 'E'}}]);
+            { message: { msgShortText: 'Successfully finished', msgLongText: 'Successfully finished', msgType: 'I'}},
+            { message: { msgShortText: 'Error happened in application log', msgLongText: 'Error happened in application log', msgType: 'E'}}]);
           (new Date(jobOccurrenceEntry.endDateTime) - new Date(jobOccurrenceEntry.actualStartDateTime))
             .should.within(1000, 1200);
           should(jobOccurrenceEntry.instance).not.be.ok;
@@ -315,7 +315,7 @@ describe('Job Class tests',  () => {
           jobEntry2.finishedOccurrences.should.eql(1);
           jobEntry2.failedOccurrences.should.eql(0);
           jobEntry2.canceledOccurrences.should.eql(0);
-          jobOccurrenceEntry1.applicationLog.length.should.eql(2);
+          jobOccurrenceEntry1.applicationLog.length.should.eql(3);
           jobOccurrenceEntry2.applicationLog.length.should.within(6, 8);
           resolve(1);
         }, 1100);
@@ -381,8 +381,8 @@ describe('Job Class tests',  () => {
           should(jobEntry.instance).not.be.ok();
           jobOccurrence.status.should.eql(OccurrenceStatusEnum.failed);
           jobOccurrence.applicationLog.should.containDeep([
-            { message: { msgShortText: 'application log 1', msgLongText: 'application log 1', msgType: 'I'}},
-            { message: { msgShortText: 'error happened', msgLongText: 'error happened', msgType: 'E'}}]);
+            { message: { msgShortText: 'Successfully finished', msgLongText: 'Successfully finished', msgType: 'I'}},
+            { message: { msgShortText: 'Error happened in application log', msgLongText: 'Error happened in application log', msgType: 'E'}}]);
           // (new Date(jobOccurrence.actualStartDateTime + ' UTC') - now).should.within(-1000, 0);
           (new Date(jobOccurrence.endDateTime) - new Date(jobOccurrence.actualStartDateTime))
             .should.within(1000, 1200);

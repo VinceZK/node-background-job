@@ -12,6 +12,6 @@ router.post('/api/jobs/cancel', JobCtrl.cancelJobs);
 router.get('/api/jobs', JobCtrl.searchJobs);
 router.get('/api/jobs/:name/occurrences', JobCtrl.searchJobOccurrences);
 router.get('/api/occurrences/:uuid', JobCtrl.getOccurrence);
-router.delete('/api/occurrences', JobCtrl.cancelOccurrences);
+router.post('/api/occurrences/cancel', JobCtrl.cancelOccurrences);
 router.get('/api/jobPrograms', JobCtrl.searchJobPrograms);
 router.get('/api/jobPrograms/:name', JobCtrl.getJobProgramDefinition);

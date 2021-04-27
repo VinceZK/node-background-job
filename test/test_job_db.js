@@ -3,6 +3,7 @@ import JobProgram from "../server/jobProgram.js";
 import * as jor from 'json-on-relations';
 import JobOccurrence from "../server/jobOccurrence.js";
 import {JobStatusEnum, OccurrenceStatusEnum} from "../server/constants.js";
+import {EntityDB} from "json-on-relations";
 
 async function deleteInstance(INSTANCE_GUID) {
   return new Promise( (resolve, reject) => {
@@ -160,7 +161,7 @@ describe.only('Job DB Tests',  () => {
       });
       occGuid = occInCache.instance.INSTANCE_GUID;
       occUUID = occInCache.uuid;
-      const occInDB = await JobOccurrence.getOccurrenceDB(occGuid);
+      const occInDB = await JobOccurrence.getOccurrenceDB(occUUID);
       occInDB.should.containDeep({
         uuid: occInCache.uuid,
         status: OccurrenceStatusEnum.ready,
@@ -182,7 +183,7 @@ describe.only('Job DB Tests',  () => {
       return new Promise( (resolve, reject) => {
         setTimeout( async () => {
           const occInCacheThen = JobOccurrence.getOccurrence(occUUID);
-          const occInDBThen = await JobOccurrence.getOccurrenceDB(occGuid);
+          const occInDBThen = await JobOccurrence.getOccurrenceDB(occUUID);
           try {
             occInCacheThen.status.should.eql(OccurrenceStatusEnum.running);
             occInCacheThen.actualStartDateTime.should.be.ok();
@@ -201,7 +202,7 @@ describe.only('Job DB Tests',  () => {
       return new Promise( (resolve, reject) => {
         setTimeout( async () => {
           const occInCacheThen = JobOccurrence.getOccurrence(occUUID);
-          const occInDBThen = await JobOccurrence.getOccurrenceDB(occGuid);
+          const occInDBThen = await JobOccurrence.getOccurrenceDB(occUUID);
           const jobInCacheThen = Job.getJob('testImmediateJob99');
           const jobInDBThen = await Job.getJobDB('testImmediateJob99');
           try{
@@ -346,7 +347,7 @@ describe.only('Job DB Tests',  () => {
       });
       occGuid = occInCache.instance.INSTANCE_GUID;
       occUUID = occInCache.uuid;
-      const occInDB = await JobOccurrence.getOccurrenceDB(occGuid);
+      const occInDB = await JobOccurrence.getOccurrenceDB(occUUID);
       occInDB.should.containDeep({
         uuid: occInCache.uuid,
         status: OccurrenceStatusEnum.ready,
@@ -371,7 +372,7 @@ describe.only('Job DB Tests',  () => {
       return new Promise( (resolve, reject) => {
         setTimeout(async () => {
           const occInCacheThen = JobOccurrence.getOccurrence(occUUID);
-          const occInDBThen = await JobOccurrence.getOccurrenceDB(occGuid);
+          const occInDBThen = await JobOccurrence.getOccurrenceDB(occUUID);
           try {
             occInCacheThen.status.should.eql(OccurrenceStatusEnum.running);
             occInCacheThen.actualStartDateTime.should.be.ok();
@@ -393,7 +394,7 @@ describe.only('Job DB Tests',  () => {
       return new Promise( (resolve, reject) => {
         setTimeout(async () => {
           const occInCacheThen = JobOccurrence.getOccurrence(occUUID);
-          const occInDBThen = await JobOccurrence.getOccurrenceDB(occGuid);
+          const occInDBThen = await JobOccurrence.getOccurrenceDB(occUUID);
           const jobInCacheThen = Job.getJob('testSpecificTimeJob99');
           const jobInDBThen = await Job.getJobDB('testSpecificTimeJob99');
           try{
@@ -594,7 +595,7 @@ describe.only('Job DB Tests',  () => {
       });
       occGUIDs = occInCache.map( occ => occ.instance.INSTANCE_GUID);
       occUUIDs = occInCache.map( occ => occ.uuid);
-      let occInDB = await JobOccurrence.getOccurrenceDB(occGUIDs[0]);
+      let occInDB = await JobOccurrence.getOccurrenceDB(occUUIDs[0]);
       const expectResult = {
         uuid: occUUIDs[0],
         jobName: 'testRecursiveTimeJob99',
@@ -613,7 +614,7 @@ describe.only('Job DB Tests',  () => {
         outputSetting: {console2ApplicationLog: 1}
       };
       occInDB.should.containDeep(expectResult);
-      occInDB = await JobOccurrence.getOccurrenceDB(occGUIDs[1]);
+      occInDB = await JobOccurrence.getOccurrenceDB(occUUIDs[1]);
       expectResult.uuid = occInCache[1].uuid;
       expectResult.scheduledDateTime = occInCache[1].scheduledDateTime;
       occInDB.should.containDeep(expectResult);
@@ -630,7 +631,7 @@ describe.only('Job DB Tests',  () => {
       return new Promise( (resolve, reject) => {
         setTimeout( async () => {
           const occInCacheThen = JobOccurrence.getOccurrence(occUUIDs[0]);
-          const occInDBThen = await JobOccurrence.getOccurrenceDB(occGUIDs[0]);
+          const occInDBThen = await JobOccurrence.getOccurrenceDB(occUUIDs[0]);
           try {
             occInCacheThen.status.should.eql(OccurrenceStatusEnum.running);
             occInCacheThen.actualStartDateTime.should.be.ok();
@@ -651,7 +652,7 @@ describe.only('Job DB Tests',  () => {
       return new Promise( (resolve, reject) => {
         setTimeout(async () => {
           const occInCacheThen = JobOccurrence.getOccurrence(occUUIDs[0]);
-          const occInDBThen = await JobOccurrence.getOccurrenceDB(occGUIDs[0]);
+          const occInDBThen = await JobOccurrence.getOccurrenceDB(occUUIDs[0]);
           const jobInCacheThen = Job.getJob('testRecursiveTimeJob99');
           const jobInDBThen = await Job.getJobDB('testRecursiveTimeJob99');
           try {
@@ -718,7 +719,7 @@ describe.only('Job DB Tests',  () => {
       return new Promise( (resolve, reject) => {
         setTimeout(async () => {
           const occInCacheThen = JobOccurrence.getOccurrence(occUUIDs[1]);
-          const occInDBThen = await JobOccurrence.getOccurrenceDB(occGUIDs[1]);
+          const occInDBThen = await JobOccurrence.getOccurrenceDB(occUUIDs[1]);
           const jobInCacheThen = Job.getJob('testRecursiveTimeJob99');
           const jobInDBThen = await Job.getJobDB('testRecursiveTimeJob99');
           try {
@@ -759,6 +760,20 @@ describe.only('Job DB Tests',  () => {
         await deleteInstance(guid);
       }
     })
+  });
+
+  describe.only('clear db', ()=>{
+    it('should clear all the jobs and occurrences', (done) => {
+      const selectSQL = 'SELECT INSTANCE_GUID FROM ENTITY_INSTANCES where ENTITY_ID = \'jobOccurrence\' or ENTITY_ID = \'job\'';
+      EntityDB.executeSQL(selectSQL, async (errors, results)=> {
+        if (errors) { console.error(errors); }
+        for (const result of results) {
+          await deleteInstance(result.INSTANCE_GUID);
+        }
+        done();
+      });
+    });
+
   });
 
   after('Close the MDB', (done) => {

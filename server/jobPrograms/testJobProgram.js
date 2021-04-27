@@ -7,7 +7,7 @@ export default class TestJobProgram extends JobProgram {
     return new Promise( (resolve, reject) => {
       setTimeout( () => {
         console.log(this.name, this.parameters);
-        if (this.parameters.param1 === 'value1'){
+        if (this.parameters.PARAM1 === 'value1'){
           applicationLog.info('application log 1');
           reject(new Error('error happened in testJobProgram'));
         } else {
@@ -35,10 +35,10 @@ JobProgram.registerJobProgram('testJobProgram', {
           text: 'Label1',
           mandatory: true,
         },
-        PARAM2: {
-          dataElement: 'USER_ID',
-          defaultValue: 'DH001'
-        }
+        // PARAM2: {
+        //   dataElement: 'USER_ID',
+        //   defaultValue: 'DH001'
+        // }
       }
     },
     GROUP2: {

@@ -40,9 +40,9 @@
   <div class="mt-2" [ngSwitch]="currentSection">
     <div *ngSwitchCase="0" class="card card-body">
       <div class="form-group row">
-        <label for="seconds" class="col-md-3 col-xl-2 col-form-label">At:</label>
+        <label for="seconds" class="col-md-3 col-xl-2 col-form-label form-control-sm">At:</label>
         <div class="col-md-9 col-xl-4">
-          <input id="seconds" name="seconds" type="text" class="form-control"
+          <input id="seconds" name="seconds" type="text" class="form-control form-control-sm"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
                  [(ngModel)]="cronArrayAt[0]" #seconds="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(0)" (keydown)="onKeydown($event)"
@@ -56,14 +56,14 @@
         </div>
       </div>
       <div class="form-group row">
-        <label for="everySecond" class="col-md-3 col-xl-2 col-form-label">Every(/):</label>
+        <label for="everySecond" class="col-md-3 col-xl-2 col-form-label form-control-sm">Every(/):</label>
         <div class="col-6 col-md-4 col-xl-2">
-          <input id="everySecond" name="everySecond" type="number" class="form-control"
+          <input id="everySecond" name="everySecond" type="number" class="form-control form-control-sm"
                  [readOnly]="readonly" [(ngModel)]="cronArrayEvery[0]" (keyup)="onKeyup(0)">
         </div>
-        <label for="everySecond" class="col-6 col-md-5 col-xl-2 col-form-label">seconds</label>
+        <label for="everySecond" class="col-6 col-md-5 col-xl-2 col-form-label form-control-sm">seconds</label>
         <div class="col-md-6 col-xl-1"></div>
-        <button class="col-md-4 col-xl-2 btn btn-info mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
+        <button class="col-md-4 col-xl-2 btn btn-info btn-sm mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
           Help(?)
         </button>
       </div>
@@ -105,9 +105,9 @@
     </div>
     <div *ngSwitchCase="1" class="card card-body">
       <div class="form-group row">
-        <label for="minutes" class="col-md-3 col-xl-2 col-form-label">At:</label>
+        <label for="minutes" class="col-md-3 col-xl-2 col-form-label form-control-sm">At:</label>
         <div class="col-md-9 col-xl-4">
-          <input id="minutes" name="minutes" type="text" class="form-control"
+          <input id="minutes" name="minutes" type="text" class="form-control form-control-sm"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
                  [(ngModel)]="cronArrayAt[1]" #minutes="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(1)" (keydown)="onKeydown($event)"
@@ -121,14 +121,14 @@
         </div>
       </div>
       <div class="form-group row">
-        <label for="everyMinute" class="col-md-3 col-xl-2 col-form-label">Every(/):</label>
+        <label for="everyMinute" class="col-md-3 col-xl-2 col-form-label form-control-sm">Every(/):</label>
         <div class="col-6 col-md-4 col-xl-2">
-          <input id="everyMinute" name="everyMinute" type="number" class="form-control"
+          <input id="everyMinute" name="everyMinute" type="number" class="form-control form-control-sm"
                  [readOnly]="readonly" [(ngModel)]="cronArrayEvery[1]" (keyup)="onKeyup(1)">
         </div>
-        <label for="everySecond" class="col-6 col-md-5 col-xl-2 col-form-label">minutes</label>
+        <label for="everySecond" class="col-6 col-md-5 col-xl-2 col-form-label form-control-sm">minutes</label>
         <div class="col-md-6 col-xl-1"></div>
-        <button class="col-md-4 col-xl-2 btn btn-info mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
+        <button class="col-md-4 col-xl-2 btn btn-info btn-sm mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
           Help(?)
         </button>
       </div>
@@ -170,9 +170,9 @@
     </div>
     <div *ngSwitchCase="2" class="card card-body">
       <div class="form-group row">
-        <label for="hours" class="col-md-3 col-xl-2 col-form-label">At:</label>
+        <label for="hours" class="col-md-3 col-xl-2 col-form-label form-control-sm">At:</label>
         <div class="col-md-9 col-xl-4">
-          <input id="hours" name="hours" type="text" class="form-control"
+          <input id="hours" name="hours" type="text" class="form-control form-control-sm"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
                  [(ngModel)]="cronArrayAt[2]" #hours="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(2)" (keydown)="onKeydown($event)"
@@ -186,14 +186,14 @@
         </div>
       </div>
       <div class="form-group row">
-        <label for="everyMinute" class="col-md-3 col-xl-2 col-form-label">Every(/):</label>
+        <label for="everyMinute" class="col-md-3 col-xl-2 col-form-label form-control-sm">Every(/):</label>
         <div class="col-6 col-md-4 col-xl-2">
-          <input id="everyHour" name="everyHour" type="number" class="form-control"
+          <input id="everyHour" name="everyHour" type="number" class="form-control form-control-sm"
                  [readOnly]="readonly" [(ngModel)]="cronArrayEvery[2]" (keyup)="onKeyup(2)">
         </div>
-        <label for="everyHour" class="col-6 col-md-5 col-xl-2 col-form-label">hours</label>
+        <label for="everyHour" class="col-6 col-md-5 col-xl-2 col-form-label form-control-sm">hours</label>
         <div class="col-md-6 col-xl-1"></div>
-        <button class="col-md-4 col-xl-2 btn btn-info mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
+        <button class="col-md-4 col-xl-2 btn btn-info btn-sm mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
           Help(?)
         </button>
       </div>
@@ -233,9 +233,9 @@
     </div>
     <div *ngSwitchCase="3" class="card card-body">
       <div class="form-group row">
-        <label for="dayOfMonth" class="col-md-3 col-xl-2 col-form-label">At:</label>
+        <label for="dayOfMonth" class="col-md-3 col-xl-2 col-form-label form-control-sm">At:</label>
         <div class="col-md-9 col-xl-4">
-          <input id="dayOfMonth" name="dayOfMonth" type="text" class="form-control"
+          <input id="dayOfMonth" name="dayOfMonth" type="text" class="form-control form-control-sm"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
                  [(ngModel)]="cronArrayAt[3]" #dayOfMonth="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(3)" (keydown)="onKeydown($event)"
@@ -249,14 +249,14 @@
         </div>
       </div>
       <div class="form-group row">
-        <label for="everyDay" class="col-md-3 col-xl-2 col-form-label">Every(/):</label>
+        <label for="everyDay" class="col-md-3 col-xl-2 col-form-label form-control-sm">Every(/):</label>
         <div class="col-6 col-md-4 col-xl-2">
-          <input id="everyDay" name="everyDay" type="number" class="form-control"
+          <input id="everyDay" name="everyDay" type="number" class="form-control form-control-sm"
                  [readOnly]="readonly" [(ngModel)]="cronArrayEvery[3]" (keyup)="onKeyup(3)">
         </div>
-        <label for="everyDay" class="col-6 col-md-5 col-xl-2 col-form-label">days</label>
+        <label for="everyDay" class="col-6 col-md-5 col-xl-2 col-form-label form-control-sm">days</label>
         <div class="col-md-6 col-xl-1"></div>
-        <button class="col-md-4 col-xl-2 btn btn-info mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
+        <button class="col-md-4 col-xl-2 btn btn-info btn-sm mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
           Help(?)
         </button>
       </div>
@@ -296,9 +296,9 @@
     </div>
     <div *ngSwitchCase="4" class="card card-body">
       <div class="form-group row">
-        <label for="month" class="col-md-3 col-xl-2 col-form-label">At:</label>
+        <label for="month" class="col-md-3 col-xl-2 col-form-label form-control-sm">At:</label>
         <div class="col-md-9 col-xl-4">
-          <input id="month" name="month" type="text" class="form-control"
+          <input id="month" name="month" type="text" class="form-control form-control-sm"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
                  [(ngModel)]="cronArrayAt[4]" #month="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(4)" (keydown)="onKeydown($event)"
@@ -312,14 +312,14 @@
         </div>
       </div>
       <div class="form-group row">
-        <label for="everyMonth" class="col-md-3 col-xl-2 col-form-label">Every(/):</label>
+        <label for="everyMonth" class="col-md-3 col-xl-2 col-form-label form-control-sm">Every(/):</label>
         <div class="col-6 col-md-4 col-xl-2">
-          <input id="everyMonth" name="everyMonth" type="number" class="form-control"
+          <input id="everyMonth" name="everyMonth" type="number" class="form-control form-control-sm"
                  [readOnly]="readonly" [(ngModel)]="cronArrayEvery[4]" (keyup)="onKeyup(4)">
         </div>
-        <label for="everyMonth" class="col-6 col-md-5 col-xl-2 col-form-label">month</label>
+        <label for="everyMonth" class="col-6 col-md-5 col-xl-2 col-form-label form-control-sm">month</label>
         <div class="col-md-6 col-xl-1"></div>
-        <button class="col-md-4 col-xl-2 btn btn-info mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
+        <button class="col-md-4 col-xl-2 btn btn-info btn-sm mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
           Help(?)
         </button>
       </div>
@@ -364,9 +364,9 @@
     </div>
     <div *ngSwitchCase="5" class="card card-body">
       <div class="form-group row">
-        <label for="dayOfWeek" class="col-md-3 col-xl-2 col-form-label">At:</label>
+        <label for="dayOfWeek" class="col-md-3 col-xl-2 col-form-label form-control-sm">At:</label>
         <div class="col-md-9 col-xl-4">
-          <input id="dayOfWeek" name="dayOfWeek" type="text" class="form-control"
+          <input id="dayOfWeek" name="dayOfWeek" type="text" class="form-control form-control-sm"
                  required pattern="^\*$|^((\d+)|(\d+-\d+))((,\d+)|(,\d+-\d+))*$"
                  [(ngModel)]="cronArrayAt[5]" #dayOfWeek="ngModel" [readOnly]="readonly"
                  (keyup)="onKeyup(5)" (keydown)="onKeydown($event)"
@@ -380,14 +380,14 @@
         </div>
       </div>
       <div class="form-group row">
-        <label for="everyDayOfWeek" class="col-md-3 col-xl-2 col-form-label">Every(/):</label>
+        <label for="everyDayOfWeek" class="col-md-3 col-xl-2 col-form-label form-control-sm">Every(/):</label>
         <div class="col-6 col-md-4 col-xl-2">
-          <input id="everyDayOfWeek" name="everyDayOfWeek" type="number" class="form-control"
+          <input id="everyDayOfWeek" name="everyDayOfWeek" type="number" class="form-control form-control-sm"
                  [readOnly]="readonly" [(ngModel)]="cronArrayEvery[5]" (keyup)="onKeyup(5)">
         </div>
-        <label for="everyDayOfWeek" class="col-6 col-md-5 col-xl-2 col-form-label">days</label>
+        <label for="everyDayOfWeek" class="col-6 col-md-5 col-xl-2 col-form-label form-control-sm">days</label>
         <div class="col-md-6 col-xl-1"></div>
-        <button class="col-md-4 col-xl-2 btn btn-info mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
+        <button class="col-md-4 col-xl-2 btn btn-info btn-sm mt-2 mx-3" type="button" (click)="onOpenDocumentation()">
           Help(?)
         </button>
       </div>
@@ -435,16 +435,16 @@
     <div class="card card-body">
       <div class="row">
         <div class="form-group row col-xl-6">
-          <label for="startFrom" class="col-md-3 col-form-label">Start:</label>
+          <label for="startFrom" class="col-md-3 col-form-label form-control-sm">Start:</label>
           <div class="col-md-9">
-            <input id="startFrom" name="startFrom" type="datetime-local" class="form-control"
+            <input id="startFrom" name="startFrom" type="datetime-local" class="form-control form-control-sm"
                    [readOnly]="readonly" [(date)]="cronCurrentDate" (dateChange)="onChangeCurrentDate($event)">
           </div>
         </div>
         <div class="form-group row col-xl-6">
-          <label for="endAt" class="col-md-3 col-form-label">End:</label>
+          <label for="endAt" class="col-md-3 col-form-label form-control-sm">End:</label>
           <div class="col-md-9">
-            <input id="endAt" name="endAt" type="datetime-local" class="form-control"
+            <input id="endAt" name="endAt" type="datetime-local" class="form-control form-control-sm"
                    [readOnly]="readonly" [(date)]="cronEndDate" (dateChange)="onChangeEndDate($event)">
           </div>
         </div>

@@ -1,26 +1,26 @@
 <form class="mt-4 ml-2 row">
-  <dk-app-attribute-form2 class="col-md-6 col-lg-4 dk-form-label"
-                          [attributeControl]="getJobAttrCtrlFromID('createdBy')"
-                          [formGroup]="mainForm"
-                          [isSmallSize] = "true"
-                          [readonly]="true">
-  </dk-app-attribute-form2>
-  <dk-app-attribute-form2 class="col-md-6 col-lg-4 dk-form-label"
-                          [attributeControl]="getJobAttrCtrlFromID('createTime')"
-                          [formGroup]="mainForm"
-                          [isSmallSize] = "true"
-                          [readonly]="true">
-  </dk-app-attribute-form2>
-  <dk-app-attribute-form2 class="col-md-6 col-lg-4 dk-form-label"
-                          [attributeControl]="getJobAttrCtrlFromID('lastChangedBy')"
-                          [formGroup]="mainForm"
-                          [isSmallSize] = "true"
-                          [readonly]="true">
-  </dk-app-attribute-form2>
-  <dk-app-attribute-form2 class="col-md-6 col-lg-4 dk-form-label"
-                          [attributeControl]="getJobAttrCtrlFromID('lastChangeTime')"
-                          [formGroup]="mainForm"
-                          [isSmallSize] = "true"
-                          [readonly]="true">
-  </dk-app-attribute-form2>
+  <div class="form-group col-md-6 col-lg-4" [formGroup]="mainForm">
+    <label for="createdBy" class="col-form-label form-control-sm">Created by:
+    </label>
+    <input class="form-control form-control-sm" id="createdBy" name="createdBy"
+           formControlName="createdBy" readonly>
+  </div>
+  <div class="form-group col-md-6 col-lg-4" [formGroup]="mainForm">
+    <label for="createTime" class="col-form-label form-control-sm">Create Time:
+    </label>
+    <input class="form-control form-control-sm" id="createTime" name="createTime"
+           formControlName="createTime" readonly>
+  </div>
+  <div class="form-group col-md-6 col-lg-4" [formGroup]="mainForm">
+    <label for="lastChangedBy" class="col-form-label form-control-sm">Last Changed by:
+    </label>
+    <input class="form-control form-control-sm" id="lastChangedBy" name="lastChangedBy"
+           formControlName="lastChangedBy" readonly>
+  </div>
+  <div class="form-group col-md-6 col-lg-4" [formGroup]="mainForm">
+    <label for="lastChangeTime" class="col-form-label form-control-sm">Last Change Time:
+    </label>
+    <input class="form-control form-control-sm" id="lastChangeTime" name="lastChangeTime"
+           formControlName="lastChangeTime" readonly>
+  </div>
 </form>

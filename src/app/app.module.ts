@@ -17,6 +17,7 @@ import { JobParametersComponent } from './job-detail/job-parameters/job-paramete
 import { JobRecursiveScheduleComponent } from './job-detail/job-start-condition/job-recursive-schedule/job-recursive-schedule.component';
 import { DateDirective } from './job-detail/date.directive';
 import { JobOccurrenceDetailComponent } from './job-detail/job-occurrences/job-occurrence-detail/job-occurrence-detail.component';
+import {WorkProtectionGuard} from './work-protection.guard';
 
 const appRoutes: Routes = [
   // {
@@ -27,8 +28,7 @@ const appRoutes: Routes = [
   //   }
   // },
   { path: 'jobs', component: JobListComponent },
-  { path: 'jobs/:name', component: JobDetailComponent,
-    children: [{ path: 'occurrences/:uuid', component: JobOccurrenceDetailComponent }] },
+  { path: 'jobs/:name', component: JobDetailComponent, canDeactivate: [WorkProtectionGuard]},
   { path: '**', redirectTo: 'jobs', pathMatch: 'full'}
 ];
 
@@ -49,7 +49,6 @@ const appRoutes: Routes = [
   imports: [
     HttpClientModule,
     BrowserModule,
-    // AppRoutingModule,
     MessageModule,
     JorAngularModule,
     RouterModule.forRoot(appRoutes),

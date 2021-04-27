@@ -35,9 +35,9 @@ JobProgram.registerJobProgram('testJobProgram2', {
           text: 'Label1',
           mandatory: true,
         },
-        PARAM2: {
-          dataElement: 'USER_ID',
-        }
+        // PARAM2: {
+        //   dataElement: 'USER_ID',
+        // }
       }
     }
   }

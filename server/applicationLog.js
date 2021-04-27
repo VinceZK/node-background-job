@@ -28,7 +28,7 @@ export default class ApplicationLog extends console.Console {
   }
 
   log(...data) {
-    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');;
+    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     super.log(`info [${now}]`, util.format(...data));
     const logEntry = {
       time: now,
@@ -46,7 +46,7 @@ export default class ApplicationLog extends console.Console {
   }
 
   error(...data) {
-    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');;
+    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     super.error(`error [${now}]`, util.format(...data));
     const logEntry = {
       time: now,
@@ -56,7 +56,7 @@ export default class ApplicationLog extends console.Console {
   }
 
   warn(...data) {
-    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');;
+    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     super.warn(`warn [${now}]`, util.format(...data));
     const logEntry = {
       time: now,
@@ -82,7 +82,7 @@ export default class ApplicationLog extends console.Console {
   }
 
   #message(msgType, msgCat, msgName, ...args) {
-    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');;
+    let now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const logEntry = {
       time: now,
       message: this.message.report(msgCat, msgName, msgType, ...args)

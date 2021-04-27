@@ -1,8 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import {switchMap} from 'rxjs/operators';
-import {ActivatedRoute, ParamMap} from '@angular/router';
+import {Component, Input, OnChanges, OnInit} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
 import {ApplicationLog, JobOccurrence, ParameterDefinitions, Step} from '../../../job-types';
-import {Message, MessageService} from 'ui-message-angular';
 import {JobService} from '../../../job.service';
 import {FormBuilder, FormGroup} from '@angular/forms';
 
@@ -11,12 +9,12 @@ import {FormBuilder, FormGroup} from '@angular/forms';
   templateUrl: './job-occurrence-detail.component.html',
   styleUrls: ['./job-occurrence-detail.component.css']
 })
-export class JobOccurrenceDetailComponent implements OnInit {
+export class JobOccurrenceDetailComponent implements OnInit, OnChanges {
+  @Input() jobOccurrence!: JobOccurrence;
   occStatuses: string[] = [];
   occStatusColors: string[] = [];
   messageTypes: any;
   uuid: string | null = '';
-  jobOccurrence!: JobOccurrence;
   reducedMainForm!: FormGroup;
   currentParamDefinitions!: ParameterDefinitions;
   currentJobStep!: FormGroup;
@@ -34,38 +32,29 @@ export class JobOccurrenceDetailComponent implements OnInit {
 
   constructor(private fb: FormBuilder,
               private route: ActivatedRoute,
-              private jobService: JobService,
-              private messageService: MessageService) {
+              private jobService: JobService) {
     this.occStatuses = this.jobService.occStatuses;
     this.occStatusColors = this.jobService.occStatusColors;
     this.messageTypes = this.jobService.messageTypes;
   }
 
-  ngOnInit(): void {
-    this.route.paramMap.pipe(
-      switchMap((params: ParamMap) => {
-        this.uuid = params.get('uuid');
-        return this.jobService.getOccurrence(this.uuid);
-      })
-    ).subscribe( data => {
-      if ('uuid' in data) {
-        this.jobOccurrence = data as JobOccurrence;
-        this.reducedMainForm = this.fb.group({
-          mode: this.jobOccurrence.startCondition.mode,
-          startCondition: this.fb.group({
-            mode: [ {value: this.jobOccurrence.startCondition.mode, disabled: true} ],
-            specificTime: this.jobOccurrence.startCondition.specificTime,
-            cronString: this.jobOccurrence.startCondition.cronString,
-            cronCurrentDate: this.jobOccurrence.startCondition.cronCurrentDate,
-            cronEndDate: this.jobOccurrence.startCondition.cronEndDate,
-            tz: this.jobOccurrence.startCondition.tz
-          }),
-        });
-      } else {
-        const errorMessages = data as Message[];
-        errorMessages.forEach( msg => this.messageService.add(msg));
-      }
+  ngOnChanges(): void {
+    if (!this.jobOccurrence) { return; }
+    this.reducedMainForm = this.fb.group({
+      mode: this.jobOccurrence.startCondition.mode,
+      startCondition: this.fb.group({
+        mode: [ {value: this.jobOccurrence.startCondition.mode, disabled: true} ],
+        specificTime: this.jobOccurrence.startCondition.specificTime,
+        cronString: this.jobOccurrence.startCondition.cronString,
+        cronCurrentDate: this.jobOccurrence.startCondition.cronCurrentDate,
+        cronEndDate: this.jobOccurrence.startCondition.cronEndDate,
+        tz: this.jobOccurrence.startCondition.tz
+      }),
     });
+  }
+
+  ngOnInit(): void {
+
   }
 
   openParameters(step: Step): void {

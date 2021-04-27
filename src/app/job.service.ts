@@ -9,9 +9,8 @@ import {Job, JobOccurrence, JobProgram} from './job-types';
 import {catchError} from 'rxjs/operators';
 
 const httpOptions = {
-  headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+  headers: new HttpHeaders({'Content-Type': 'application/json'})
 };
-
 
 @Injectable({
   providedIn: 'root'
@@ -94,18 +93,17 @@ export class JobService {
     if (startDate) { queryString += `&startDate=${startDate}`; }
     if (endDate) { queryString += `&endDate=${endDate}`; }
     queryString = queryString.replace('&', '?');
-    console.log(queryString);
     return this.http.get<JobOccurrence[]>(this.originalHost + `/api/jobs/${jobName}/occurrences` + queryString, httpOptions).pipe(
       catchError(this.handleError<any>('searchJobOccurrences')));
   }
 
   getOccurrence(uuid: string | null): Observable<JobOccurrence | Message[]> {
-    return this.http.get<JobOccurrence | Message[]>(this.originalHost + `/api/occurrences/${uuid}/`, httpOptions).pipe(
+    return this.http.get<JobOccurrence | Message[]>(this.originalHost + `/api/occurrences/${uuid}`, httpOptions).pipe(
       catchError(this.handleError<any>('getOccurrence')));
   }
 
   cancelOccurrences(uuids: string[]): Observable<Message[]> {
-    return this.http.post<Message[]>(this.originalHost + `/api/occurrences`, uuids, httpOptions).pipe(
+    return this.http.post<Message[]>(this.originalHost + `/api/occurrences/cancel`, uuids, httpOptions).pipe(
       catchError(this.handleError<any>('cancelOccurrences')));
   }
 
@@ -127,7 +125,7 @@ export class JobService {
         this.messageService.addMessage('EXCEPTION', 'GENERIC', messageType.Exception, operation, error.message);
       }
 
-      this.router.navigate(['errors']);
+      // this.router.navigate(['errors']);
       console.error(operation, error); // log to console instead
 
       // Let the app keep running by returning an empty result.
