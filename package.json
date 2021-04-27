@@ -1,6 +1,6 @@
 {
   "name": "node-background-job",
-  "version": "0.0.7",
+  "version": "1.0.0",
   "description": "A background job scheduler for NodeJS",
   "main": "index",
   "type": "module",
@@ -8,7 +8,7 @@
     "testServer": "mocha --require should --timeout 20000 --ui bdd ./test --recursive",
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build --prod --build-optimizer",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
