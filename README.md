@@ -39,7 +39,7 @@ starting from current to the given end time.
 
 Once you saved and scheduled the job, 
 the job occurrences will be generated and shown in the "Occurrence" tab.
-You can search and filter the occurrences with status and time span. 
+You can search and filter the occurrences with statuses and timespan. 
 In the occurrence detail, you can check the application logs and the output. 
 ![Occurrences](docs/Occurrences.png)
 
@@ -52,7 +52,7 @@ In the occurrence detail, you can check the application logs and the output.
 2. Copy the content in `node_modules\node-background-job\app\job` to `app\job`.
    The content is the compiled web UI for the job server.    
    
-3. Create a job program for testing purpose.
+3. Create a job program and register it for testing purpose.
    ``` javascript
    import { JobProgram } from "node-background-job";
    
@@ -98,7 +98,7 @@ In the occurrence detail, you can check the application logs and the output.
      }
    });
    ```
-4. Create a `server.mjs` in your project folder:
+4. Create a `server.mjs` in your project root folder:
    ``` javascript
    // Create a expressjs app
    import express from 'express';
@@ -143,7 +143,8 @@ In the occurrence detail, you can check the application logs and the output.
    $ node server.mjs
    ```   
 6. If you want to use the DB persistence,
-   then you should install the [json-on-relation](https://github.com/VinceZK/json-on-relations/wiki/Setup).
+   then you should install the [json-on-relations](https://github.com/VinceZK/json-on-relations/wiki/Setup).
+   (You can ignore the step 3 to avoid establish a jor server.
    The main benefit is to allow recovering from the job server restarting.
    
    Start the job server:
