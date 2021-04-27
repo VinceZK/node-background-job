@@ -144,7 +144,7 @@ In the occurrence detail, you can check the application logs and the output.
    ```   
 6. If you want to use the DB persistence,
    then you should install the [json-on-relations](https://github.com/VinceZK/json-on-relations/wiki/Setup).
-   (You can ignore the step 3 to avoid establish a jor server.
+   (You can ignore the step 3 to avoid establish a jor server).
    The main benefit is to allow recovering from the job server restarting.
    
    Start the job server:
