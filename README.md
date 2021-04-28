@@ -30,7 +30,7 @@ information to the job application log.
 
 In the second tab "Start Condition", you can define the job to one of the 3 modes:
 1. *Immediately*: the job will be executed immediately after scheduled.
-2. *At Specific Time*: the job will be executed at a specific time. 
+2. *At Specific Time*: the job will be executed at a specific time in future. 
 3. *Recursively*: the job will be executed recursively based on [Cron](https://www.gnu.org/software/mcron/manual/html_node/Crontab-file.html).
 
 The cron expression in the below example means the job will be executed in every minute 
@@ -89,9 +89,6 @@ In the occurrence detail, you can check the application logs and the output.
              type: 1,
              text: 'Parameter 1',
              mandatory: true,
-           },
-           PARAM2: {
-             dataElement: 'USER_ID',
            }
          }
        }
@@ -143,8 +140,8 @@ In the occurrence detail, you can check the application logs and the output.
    $ node server.mjs
    ```   
 6. If you want to use the DB persistence,
-   then you should install the [json-on-relations](https://github.com/VinceZK/json-on-relations/wiki/Setup).
-   (You can ignore the step 3 to avoid establish a jor server).
+   then you should install the [json-on-relations](https://github.com/VinceZK/json-on-relations/wiki/Setup)
+   (You can ignore the step 3).
    The main benefit is to allow recovering from the job server restarting.
    
    Start the job server:

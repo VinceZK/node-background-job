@@ -521,7 +521,7 @@ describe('Job Class tests',  () => {
     });
   });
 
-  describe('Cron test', () => {
+  describe.only('Cron test', () => {
 
     it('should return occurrences date', () => {
       let now = new Date();

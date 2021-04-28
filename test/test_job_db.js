@@ -17,7 +17,7 @@ async function deleteInstance(INSTANCE_GUID) {
   });
 }
 
-describe.only('Job DB Tests',  () => {
+describe('Job DB Tests',  () => {
 
   before('Register a test job program and a test job',  () => {
     process.env.USE_DB = true;
@@ -762,7 +762,7 @@ describe.only('Job DB Tests',  () => {
     })
   });
 
-  describe.only('clear db', ()=>{
+  describe('clear db', ()=>{
     it('should clear all the jobs and occurrences', (done) => {
       const selectSQL = 'SELECT INSTANCE_GUID FROM ENTITY_INSTANCES where ENTITY_ID = \'jobOccurrence\' or ENTITY_ID = \'job\'';
       EntityDB.executeSQL(selectSQL, async (errors, results)=> {

@@ -15,7 +15,7 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   cronString = '';
   cronCurrentDate!: Date;
   cronEndDate!: Date;
-  tz: null;
+  tz = null;
 
   @Input() startConditionForm!: FormGroup;
   @Input() readonly!: boolean;
@@ -25,6 +25,7 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   constructor() { }
 
   ngOnInit(): void {
+
   }
 
   ngOnChanges(): void {

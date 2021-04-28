@@ -173,7 +173,8 @@ export class JobDetailComponent implements OnInit {
       description: {DEFAULT: ''},
       identity: {id: ''},
       steps: [],
-      startCondition: {mode: 0, specificTime: null, cronString: null, cronCurrentDate: null, cronEndDate: null, tz: null},
+      startCondition: {mode: 0, specificTime: null, cronString: null, cronCurrentDate: null, cronEndDate: null,
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone},
       outputSetting: { console2ApplicationLog: false }
     };
     return of(jobDetail);
