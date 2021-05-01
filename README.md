@@ -56,8 +56,9 @@ In the occurrence detail, you can check the application logs and the output.
    ``` javascript
    import { JobProgram } from "node-background-job";
    
+   // Extend the super class JobProgram
    export default class TestProgram extends JobProgram {
-     async run(applicationLog) { // Job application log
+     async run(applicationLog) { // Redefine the method run
        console.log("start running testJobProgram...");
        return new Promise( (resolve, reject) => {
          setTimeout( () => {
@@ -74,6 +75,7 @@ In the occurrence detail, you can check the application logs and the output.
      }
    }
    
+   // Register the job program
    JobProgram.registerJobProgram('TestProgram', {
      className: 'TestProgram',
      class: TestProgram,

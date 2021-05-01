@@ -13,3 +13,22 @@
   z-index: 9999;
   cursor: pointer;
 }
+input.ng-invalid,
+select.ng-invalid{
+  border-color: #dc3545;
+}
+.ng-invalid + .invalid-tooltip {
+  display: block;
+  max-width: inherit;
+}
+.ng-invalid.dk-invalid-feedback,
+.ng-invalid + .dk-invalid-feedback{
+  display: inline;
+}
+.dk-invalid-feedback {
+  display: none;
+  width: 100%;
+  margin-top: .25rem;
+  font-size: 80%;
+  color: #dc3545;
+}

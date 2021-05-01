@@ -1,6 +1,6 @@
 {
   "name": "node-background-job",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A background job scheduler for NodeJS",
   "main": "index",
   "type": "module",

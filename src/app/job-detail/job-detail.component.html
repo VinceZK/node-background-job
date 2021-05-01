@@ -50,7 +50,10 @@
 
   <div class="mt-2 ml-1 row">
     <div class="form-group col-md-6 col-lg-4" [formGroup]="mainForm">
-      <label for="description" class="col-form-label form-control-sm">Job Name:
+      <label for="jobName" class="col-form-label form-control-sm">Job Name:
+        <span [class.ng-invalid]="mainForm.get('name')?.invalid" class="dk-invalid-feedback">
+          {{mainForm.get('name')?.errors?.message}}
+        </span>
       </label>
       <input class="form-control form-control-sm" id="jobName" name="jobName"
                 formControlName="name" [readonly]="readonly">

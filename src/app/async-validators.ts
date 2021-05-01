@@ -11,7 +11,7 @@ export function existingJobNameValidator(jobService: JobService,
       switchMap( () => jobService.getJob(control.value).pipe(
         map(data => {
           // @ts-ignore
-          if (data.job && data.job[0].name === control.value) {
+          if (data?.name === control.value) {
             return {message: messageService.generateMessage('JOB', 'JOB_EXISTS',
                 'E', control.value).msgShortText};
           } else {
