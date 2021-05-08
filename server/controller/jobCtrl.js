@@ -242,7 +242,8 @@ export default class JobCtrl{
     }
 
     function _getUnscheduledOccurrences() {
-      const job = Job.getJob(jobName).instance;
+      const job = Job.getJob(jobName)?.instance;
+      if (!job) {return;}
       const unScheduledOccurrences = job.getUnscheduledOccurrences(filter.endDate || null)
         .map((scheduleDateTime, index) => {
           return {

@@ -1,7 +1,7 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup} from '@angular/forms';
 import {JobService} from '../../job.service';
-import {Job, JobOccurrence} from '../../job-types';
+import {JobOccurrence} from '../../job-types';
 import {Router} from '@angular/router';
 import {Message, MessageService} from 'ui-message-angular';
 
