@@ -3,37 +3,43 @@
     <div class="row mb-2">
       <div class="col-4">
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusReady" [(ngModel)]="status[0]">
-          <label class="form-check-label" [ngClass]="occStatusColors[1]" for="statusReady">
-            {{occStatuses[1]}}({{numOfOccs[0]}})
+          <input class="form-check-input" type="checkbox" id="statusInitial" [(ngModel)]="status[0]">
+          <label class="form-check-label" [ngClass]="occStatusColors[0]" for="statusInitial">
+            {{occStatuses[0]}}({{numOfOccs[0]}})
           </label>
         </div>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusFailed" [(ngModel)]="status[3]">
-          <label class="form-check-label" [ngClass]="occStatusColors[4]" for="statusFailed">
-            {{occStatuses[4]}}({{numOfOccs[3]}})
-          </label>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusRunning" [(ngModel)]="status[1]">
-          <label class="form-check-label" [ngClass]="occStatusColors[2]" for="statusRunning">
-            {{occStatuses[2]}}({{numOfOccs[1]}})
-          </label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusCanceled" [(ngModel)]="status[4]">
-          <label class="form-check-label" [ngClass]="occStatusColors[5]" for="statusCanceled">
-            {{occStatuses[5]}}({{numOfOccs[4]}})
-          </label>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" id="statusFinished" [(ngModel)]="status[2]">
+          <input class="form-check-input" type="checkbox" id="statusFinished" [(ngModel)]="status[3]">
           <label class="form-check-label" [ngClass]="occStatusColors[3]" for="statusFinished">
-            {{occStatuses[3]}}({{numOfOccs[2]}})
+            {{occStatuses[3]}}({{numOfOccs[3]}})
+          </label>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusReady" [(ngModel)]="status[1]">
+          <label class="form-check-label" [ngClass]="occStatusColors[1]" for="statusReady">
+            {{occStatuses[1]}}({{numOfOccs[1]}})
+          </label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusFailed" [(ngModel)]="status[4]">
+          <label class="form-check-label" [ngClass]="occStatusColors[4]" for="statusFailed">
+            {{occStatuses[4]}}({{numOfOccs[4]}})
+          </label>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusRunning" [(ngModel)]="status[2]">
+          <label class="form-check-label" [ngClass]="occStatusColors[2]" for="statusRunning">
+            {{occStatuses[2]}}({{numOfOccs[2]}})
+          </label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="statusCanceled" [(ngModel)]="status[5]">
+          <label class="form-check-label" [ngClass]="occStatusColors[5]" for="statusCanceled">
+            {{occStatuses[5]}}({{numOfOccs[5]}})
           </label>
         </div>
       </div>
@@ -56,14 +62,14 @@
         </div>
         <div class="col-2 form-group">
           <button type="button" id="search" class="btn btn-primary btn-sm position-absolute fixed-bottom"
-                  (click)="search()">Search</button>
+                  (click)="search()">Go</button>
         </div>
       </div>
     </div>
 
     <div class="list-group dk-scroll-list">
       <a *ngFor="let jobOcc of jobOccurrences"
-         (click)="showOccurrence(jobOcc.uuid)"
+         (click)="showOccurrence(jobOcc)"
          [ngClass]="{'active': jobOcc.uuid === jobOccurrence?.uuid}"
          class="list-group-item list-group-item-action flex-column align-items-start">
         <h5 class="mb-1" [ngClass]="occStatusColors[jobOcc.status]">{{occStatuses[jobOcc.status]}}</h5>

@@ -46,7 +46,7 @@ Scheduler.getPreviousPIDs()
     // TODO: if preNumNodes !== numNodes, then apply redistribution of jobs.
     if (cluster.isMaster) {
       for (let i = 0; i < numNodes; i++) {
-        let worker = cluster.fork({previousPID: Scheduler.previousPIDs[i]});
+        let worker = cluster.fork({previousPID: Scheduler.previousPIDs[i] || 0});
         console.log(`worker ${worker.id}/${worker.process.pid} is generated`);
       }
 

@@ -3,6 +3,8 @@ import JobOccurrence from "../jobOccurrence.js";
 import JobProgram from "../jobProgram.js";
 import {Message, MsgArrayStore} from "ui-message";
 import {msgArray} from "../../data/message_job_server.js";
+import CronParser from "cron-parser";
+import {OccurrenceStatusEnum} from "../constants.js";
 
 const msgStore = new MsgArrayStore(msgArray);
 export const message = new Message(msgStore, 'EN');
@@ -51,6 +53,36 @@ export default class JobCtrl{
           res.json([e.message])
         }
       });
+  }
+
+  static simulateRecurrences(req, res) {
+    const cronString = req.body.cronString;
+    const cronOption = {
+      currentDate: req.body.cronCurrentDate? new Date(req.body.cronCurrentDate + ' UTC') : null,
+      endDate: req.body.cronEndDate? new Date(req.body.cronEndDate + ' UTC'): null,
+      tz: req.body.tz
+    };
+    const occurrences = [];
+    const maxShown = 50;
+    try {
+      const interval = CronParser.parseExpression(cronString, cronOption);
+      let scheduleDateTime;
+      while (true) {
+        try {
+          scheduleDateTime = interval.next().toISOString().slice(0, 19).replace('T', ' ');
+          if (occurrences.length > maxShown) {
+            break;
+          } else {
+            occurrences.push(scheduleDateTime);
+          }
+        } catch (e) {
+          break;
+        }
+      }
+      res.json(occurrences);
+    } catch (err) {
+      res.json(message.report('job', 'GENERIC_ERROR', 'E', err));
+    }
   }
 
   static getJob(req, res) {
@@ -167,7 +199,8 @@ export default class JobCtrl{
   }
 
   static searchJobOccurrences(req, res) {
-    let filter = {jobName: req.params['name']};
+    const jobName = req.params['name'];
+    const filter = {jobName: jobName};
     if (req.query.status) {
       filter.status = [];
       let statuses = Array.isArray(req.query.status)? req.query.status : [req.query.status];
@@ -179,13 +212,20 @@ export default class JobCtrl{
     if (req.query.endDate) {
       filter.endDate = req.query.endDate;
     }
+
+    let occurrences = [];
     if (process.env.USE_DB === 'true') {
       JobOccurrence.getOccurrencesDB(filter)
-        .then( result => res.json(result))
+        .then( result => {
+          occurrences = result;
+          if (!filter.status || filter.status.includes(OccurrenceStatusEnum.initial)) {
+            _getUnscheduledOccurrences();
+          }
+          res.json(occurrences);
+        })
         .catch( errors => res.json(errors))
     } else {
-      const occurrences = JobOccurrence.getOccurrences(filter);
-      res.json(occurrences.map(occurrence => {
+      occurrences = JobOccurrence.getOccurrences(filter).map(occurrence => {
         return {
           uuid: occurrence.uuid,
           jobName: occurrence.jobName,
@@ -194,7 +234,27 @@ export default class JobCtrl{
           endDateTime: occurrence.endDateTime,
           scheduledDateTime: occurrence.scheduledDateTime
         }
-      }));
+      });
+      if (filter.status.includes(OccurrenceStatusEnum.initial)) {
+        _getUnscheduledOccurrences();
+      }
+      res.json(occurrences);
+    }
+
+    function _getUnscheduledOccurrences() {
+      const job = Job.getJob(jobName).instance;
+      const unScheduledOccurrences = job.getUnscheduledOccurrences(filter.endDate || null)
+        .map((scheduleDateTime, index) => {
+          return {
+            uuid: index,
+            jobName: jobName,
+            status: OccurrenceStatusEnum.initial,
+            actualStartDateTime: '',
+            endDateTime: '',
+            scheduledDateTime: scheduleDateTime
+          }
+        });
+      Array.prototype.push.apply(occurrences, unScheduledOccurrences);
     }
   }
 

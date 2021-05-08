@@ -1,7 +1,23 @@
-<div class="input-group">
-  <input id="cronString" name="cronString" type="text" class="form-control form-control-sm" readonly #cronStringInput
+<div *ngIf="hasSimulation" class="row">
+  <div class="input-group col-11">
+    <input name="cronString" type="text" class="form-control form-control-sm" readonly #cronStringInput
+           [(ngModel)]="cronString">
+    <div class="input-group-append">
+      <button class="btn btn-sm btn-outline-secondary" title="copy to clipboard" type="button"
+              (click)="copyCronString(cronStringInput)">Copy</button>
+      <button class="btn btn-sm btn-outline-secondary" title="paste from clipboard" type="button"
+              (click)="pasteCronString()">Paste</button>
+    </div>
+  </div>
+  <div class="col-1">
+    <button class="btn btn-sm btn-outline-info" title="Simulate" type="button"
+            (click)="simulate()">Simulate</button>
+  </div>
+</div>
+<div *ngIf="!hasSimulation" class="input-group">
+  <input name="cronString" type="text" class="form-control form-control-sm" readonly #cronStringInput
          [(ngModel)]="cronString">
-  <div class="input-group-append" id="button-addon4">
+  <div class="input-group-append">
     <button class="btn btn-sm btn-outline-secondary" title="copy to clipboard" type="button"
             (click)="copyCronString(cronStringInput)">Copy</button>
     <button class="btn btn-sm btn-outline-secondary" title="paste from clipboard" type="button"
@@ -458,3 +474,28 @@
     </div>
   </div>
 </form>
+
+<div class="modal fade" id="simulatedRecurrences" tabindex="-1" role="dialog"
+     [ngClass]="{'show': isSimulationModalShown}"
+     [ngStyle]="{'display': displaySimulationModal}">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addAuthObjectTitle">Simulated Recurrences</h5>
+        <button type="button" class="close" (click)="close()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group list-group-flush dk-modal-simulate">
+          <li class="list-group-item" *ngFor="let scheduleDateTime of recurrences; index as i">
+            {{i < 50 ? toLocaleString(scheduleDateTime) : 'There is more...'}}
+          </li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" (click)="close()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

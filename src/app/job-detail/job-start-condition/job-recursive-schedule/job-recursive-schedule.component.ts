@@ -1,5 +1,8 @@
 import {Component, Input, OnChanges, OnInit, ViewChild} from '@angular/core';
 import {FormGroup} from '@angular/forms';
+import {JobService} from '../../../job.service';
+import {Message, MessageService} from 'ui-message-angular';
+import {Job, StartCondition} from '../../../job-types';
 
 @Component({
   selector: 'app-job-recursive-schedule',
@@ -16,13 +19,18 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   cronCurrentDate!: Date;
   cronEndDate!: Date;
   tz = null;
+  recurrences?: string[];
+  isSimulationModalShown = false;
 
   @Input() startConditionForm!: FormGroup;
   @Input() readonly!: boolean;
+  @Input() hasSimulation!: boolean;
   @ViewChild('cronForm')
   cronForm!: FormGroup;
 
-  constructor() { }
+  get displaySimulationModal(): string {return this.isSimulationModalShown ? 'block' : 'none'; }
+  constructor(private jobService: JobService,
+              private messageService: MessageService) { }
 
   ngOnInit(): void {
 
@@ -74,6 +82,30 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
         this.cronString = text;
         this._convertCronString2Array();
       });
+  }
+
+  simulate(): void {
+    const startCondition = new StartCondition();
+    startCondition.cronString = this.cronString;
+    startCondition.cronCurrentDate = this.startConditionForm.get('cronCurrentDate')?.value;
+    startCondition.cronEndDate = this.startConditionForm.get('cronEndDate')?.value;
+    startCondition.tz = this.startConditionForm.get('tz')?.value;
+    this.jobService.simulateRecurrences(startCondition).subscribe( data => {
+      if (data instanceof Message) {
+        this.messageService.add(data);
+      } else {
+        this.recurrences = data as string[];
+        this.isSimulationModalShown = true;
+      }
+    });
+  }
+
+  close(): void {
+    this.isSimulationModalShown = false;
+  }
+
+  toLocaleString(dateStr: string | undefined): string {
+    return this.jobService.toLocaleString(dateStr);
   }
 
   onKeyup(section: number): void {

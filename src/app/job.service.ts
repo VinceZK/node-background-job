@@ -5,7 +5,7 @@ import {Message, MessageService, messageType} from 'ui-message-angular';
 import {Router} from '@angular/router';
 import {formatDate} from '@angular/common';
 import {Observable, of} from 'rxjs';
-import {Job, JobOccurrence, JobProgram} from './job-types';
+import {Job, JobOccurrence, JobProgram, StartCondition} from './job-types';
 import {catchError} from 'rxjs/operators';
 
 const httpOptions = {
@@ -60,6 +60,11 @@ export class JobService {
   getJobStatus(jobName: string | null): Observable<number> {
     return this.http.get<number>(this.originalHost + `/api/jobs/${jobName}/status`, httpOptions).pipe(
       catchError(this.handleError<any>('getJobStatus')));
+  }
+
+  simulateRecurrences(startCondition: StartCondition): Observable<string[] | Message> {
+    return this.http.post<string[] | Message>(this.originalHost + `/api/simulate/recurrences`, startCondition, httpOptions).pipe(
+      catchError(this.handleError<any>('simulateRecurrences')));
   }
 
   scheduleJobs(JobNames: string[]): Observable<Message[]> {

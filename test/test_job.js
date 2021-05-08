@@ -3,6 +3,7 @@ import JobProgram from "../server/jobProgram.js";
 import JobOccurrence from "../server/jobOccurrence.js";
 import {JobStatusEnum, OccurrenceStatusEnum} from "../server/constants.js";
 import CronParser from "cron-parser";
+import Scheduler from "../server/scheduler.js";
 
 describe('Job Class tests',  () => {
   before('Register a test job program and a test job',  () => {
@@ -427,7 +428,7 @@ describe('Job Class tests',  () => {
       const cronOption = job.generateCronOption();
       let now = new Date();
       let end = new Date();
-      end.setSeconds(now.getSeconds() + 2147483);
+      end.setHours(now.getHours() + Scheduler.intervalHrs);
       (cronOption.currentDate - now).should.within(-100, 0);
       (cronOption.endDate - end).should.within(-100, 0);
     });
@@ -448,7 +449,7 @@ describe('Job Class tests',  () => {
         tz: 'UTC'
       });
     });
-    it('should return a cronOption: end time exceeds the max(2147483)', () => {
+    it('should return a cronOption: end time exceeds the next intervalHrs', () => {
       let now = new Date();
       jobDefinition.name = 'testRecurrentJob3';
       jobDefinition.startCondition.cronCurrentDate = new Date();
@@ -458,7 +459,7 @@ describe('Job Class tests',  () => {
       let end = new Date();
       let max = new Date();
       end.setSeconds(now.getSeconds() + 3147483);
-      max.setSeconds(now.getSeconds() + 2147483);
+      max.setHours(now.getHours() + Scheduler.intervalHrs);
       const cronOption = job.generateCronOption(end);
       cronOption.currentDate.should.eql(jobDefinition.startCondition.cronCurrentDate);
       (cronOption.endDate - max).should.within(0, 100);
@@ -466,19 +467,19 @@ describe('Job Class tests',  () => {
     it('should fail: end date is before the last scheduled occurrence', async () => {
       let now = new Date();
       jobDefinition.name = 'testRecurrentJob4';
-      jobDefinition.startCondition.cronString = '*/3 * * * * *'; // every 3 seconds
+      jobDefinition.startCondition.cronString = '*/1 * * * * *'; // every 3 seconds
       jobDefinition.startCondition.cronCurrentDate = new Date();
       jobDefinition.startCondition.cronEndDate = new Date();
-      jobDefinition.startCondition.cronEndDate.setSeconds(now.getSeconds() + 4);
+      jobDefinition.startCondition.cronEndDate.setSeconds(now.getSeconds() + 3);
       try {
         const job = new Job(jobDefinition);
         await job.scheduleOccurrences();
         const occurrences = JobOccurrence.getOccurrences({jobName: 'testRecurrentJob4'});
-        for (const occurrence of occurrences) {
-          await occurrence.instance.cancel()
+        for (let occurrence of occurrences) {
+          console.log(occurrence.scheduledDateTime);
         }
+        await occurrences[1].instance.cancel();
         let end = new Date();
-        end.setSeconds(now.getSeconds() + 1);
         job.generateCronOption(end);
         (1).should.eql(2);
       } catch (e) {
@@ -521,7 +522,7 @@ describe('Job Class tests',  () => {
     });
   });
 
-  describe.only('Cron test', () => {
+  describe.skip('Cron test', () => {
 
     it('should return occurrences date', () => {
       let now = new Date();

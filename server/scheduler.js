@@ -6,7 +6,7 @@ import {EntityDB} from 'json-on-relations';
 
 export default class Scheduler {
   static #timerHandler = null;
-  static #intervalHrs = 24;
+  static intervalHrs = 24;
   static previousPIDs = [];
 
   /**
@@ -15,7 +15,9 @@ export default class Scheduler {
    */
   static async getPreviousPIDs() {
     if (process.env.USE_DB === 'true') {
-      const selectSQL = 'select distinct jobNode from job where jobServer = ' + EntityDB.pool.escape(process.env.JOB_SERVER);
+      const selectSQL = 'select distinct jobNode from job ' +
+        'where jobServer = ' + EntityDB.pool.escape(process.env.JOB_SERVER) +
+        ' and status <= 1';
       return new Promise((resolve, reject) => {
         EntityDB.executeSQL(selectSQL, (errors, results) => {
           if (errors) {
@@ -27,7 +29,7 @@ export default class Scheduler {
         })
       });
     } else {
-      return new Promise( resolve => resolve(0));
+      return new Promise( resolve => resolve([0]));
     }
   }
 
@@ -40,12 +42,12 @@ export default class Scheduler {
       await this.#recoverActiveJobs();
     }
     let end = new Date();
-    end.setHours(end.getHours() + this.#intervalHrs);
-    // The persisted occurrences may already missed. For example, restarting the server after the '#intervalHrs'.
+    end.setHours(end.getHours() + this.intervalHrs + 1); // Add 1 hr buffer
+    // The persisted occurrences may already missed. For example, restarting the server after the 'intervalHrs'.
     // Thus we still need to schedule for the span from now to the end.
     // The occurrences in the overlap span won't be rescheduled.
     this.#scheduleJobOccurrences(end);
-    this.timerHandler = setInterval(() => this.#scheduleJobOccurrences(), this.#intervalHrs * 3600000);
+    this.timerHandler = setInterval(() => this.#scheduleJobOccurrences(), this.intervalHrs * 3600000);
   }
 
   static async #recoverActiveJobs() {
@@ -155,8 +157,7 @@ export default class Scheduler {
 
   static async #updateCanceledOccNum(jobName, now, canceledOccNum, isCompleted) {
     let updateSQL = 'update job ' +
-      'set canceledOccurrences = canceledOccurrences + ' + EntityDB.pool.escape(canceledOccNum) +
-      ', lastChangedBy = "sys", lastChangeTime = ' + EntityDB.pool.escape(now);
+      'set canceledOccurrences = canceledOccurrences + ' + EntityDB.pool.escape(canceledOccNum);
     if (isCompleted) {
       updateSQL += ', status = ' + EntityDB.pool.escape(JobStatusEnum.completed);
     }
@@ -176,10 +177,9 @@ export default class Scheduler {
     let start = new Date();
     if (!end) {
       end = new Date();
-      // The end is added for 1 hr buffer.
-      // This is to make sure during the job scheduling, no occurrence is missing.
-      // It is supposed the occurrence scheduling itself should be within 1 hour.
-      end.setHours(start.getHours() + this.#intervalHrs + 1);
+      // If the next occurrence is a little before the time when scheduling is running,
+      // then it will be skipped. By adding 1 hr is to make sure there is no missing occurrence.
+      end.setHours(start.getHours() + this.intervalHrs + 1);
     }
     let jobs = Job.getJobs({status : [JobStatusEnum.scheduled]});
     console.info(`(node:${process.pid})`,
@@ -206,10 +206,10 @@ export default class Scheduler {
         job.instance.scheduleOccurrences(end)
           .then( result => {
             console.info(`(node:${process.pid})`,
-              `Job(${result.jobName}) has ${result.occNum} occurrence(s) scheduled.`);
+              `Job(${result.jobName}) has ${result.numOcc} occurrence(s) scheduled.`);
           })
           .catch( error => {
-            if (error.message.msgName === 'END_DATE_BEFORE_CURRENT_DATE') {
+            if (error.message?.msgName === 'END_DATE_BEFORE_CURRENT_DATE') {
               console.info(`(node:${process.pid})`,
                 `Job(${job.name}) has occurrence(s) already scheduled after ${end.toISOString()}.`);
             } else {
@@ -220,6 +220,10 @@ export default class Scheduler {
     }
   }
 
+  /**
+   * Because the function setTimeout(maxTimeout) has the max waiting time of 2147483647ms, about 2147483s
+   * @param hrs
+   */
   static setIntervalHrs(hrs) {
     if (isNaN(hrs)) {
       throw new JobError('HOURS_IS_NOT_A_NUMBER', hrs);
@@ -229,7 +233,7 @@ export default class Scheduler {
     if (intervalSeconds > maxTimeout) {
       throw new JobError('MAX_TIMEOUT', maxTimeout / 3600);
     }
-    this.#intervalHrs = hrs;
+    this.intervalHrs = hrs;
   }
 
   static off() {

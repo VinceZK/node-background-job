@@ -9,3 +9,7 @@
   /*font-size: 100%;*/
   color: #dc3545;
 }
+.dk-modal-simulate {
+  height: 30rem;
+  overflow: auto;
+}

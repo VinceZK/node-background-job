@@ -1,5 +1,4 @@
 .dk-scroll-list {
   overflow-y: scroll;
-  min-height: 10rem;
-  max-height: 25rem;
+  height: 60vh;
 }

@@ -33,7 +33,9 @@
     <div class="card" *ngSwitchCase="2">
       <div class="card-header">Job starts recursively with the given rule</div>
       <div class="card-body">
-        <app-job-recursive-schedule [startConditionForm]="jobStartConditionFormGroup" [readonly]="readonly"></app-job-recursive-schedule>
+        <app-job-recursive-schedule [startConditionForm]="jobStartConditionFormGroup"
+                                    [readonly]="readonly" [hasSimulation]="hasSimulation">
+        </app-job-recursive-schedule>
       </div>
     </div>
   </div>

@@ -15,3 +15,4 @@ router.get('/api/occurrences/:uuid', JobCtrl.getOccurrence);
 router.post('/api/occurrences/cancel', JobCtrl.cancelOccurrences);
 router.get('/api/jobPrograms', JobCtrl.searchJobPrograms);
 router.get('/api/jobPrograms/:name', JobCtrl.getJobProgramDefinition);
+router.post('/api/simulate/recurrences', JobCtrl.simulateRecurrences);

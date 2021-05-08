@@ -12,6 +12,7 @@ export class JobStartConditionComponent implements OnInit {
   specificTime!: Date;
   @Input() readonly!: boolean;
   @Input() mainForm!: FormGroup;
+  @Input() hasSimulation!: boolean;
   @ViewChild(JobRecursiveScheduleComponent)
   jobRecursiveScheduleComponent!: JobRecursiveScheduleComponent;
 

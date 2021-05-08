@@ -1,7 +1,7 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup} from '@angular/forms';
 import {JobService} from '../../job.service';
-import {JobOccurrence} from '../../job-types';
+import {Job, JobOccurrence} from '../../job-types';
 import {Router} from '@angular/router';
 import {Message, MessageService} from 'ui-message-angular';
 
@@ -19,8 +19,8 @@ export class JobOccurrencesComponent implements OnInit {
   isSearchListShown = true;
   startDate!: Date;
   endDate!: Date;
-  status = [true, true, true, true, true];
-  numOfOccs = [0, 0, 0, 0, 0];
+  status = [true, true, true, true, true, true];
+  numOfOccs: any[] = [0, 0, 0, 0, 0, 0];
   occStatuses: string[] = [];
   occStatusColors: string[] = [];
   jobOccurrence!: JobOccurrence;
@@ -44,13 +44,13 @@ export class JobOccurrencesComponent implements OnInit {
     }
     switch (this.displayStatistics) {
       case 'displayFinished':
-        this.status = [false, false, true, false, false];
+        this.status = [false, false, false, true, false, false];
         break;
       case 'displayFailed':
-        this.status = [false, false, false, true, false];
+        this.status = [false, false, false, false, true, false];
         break;
       case 'displayCanceled':
-        this.status = [false, false, false, false, true];
+        this.status = [false, false, false, false, false, true];
         break;
       default:
     }
@@ -66,7 +66,7 @@ export class JobOccurrencesComponent implements OnInit {
 
     if (this.mode >= 2) {
       this.status.forEach( (value, index) => {
-        if (value) { statusArray.push(index + 1); }
+        if (value) { statusArray.push(index); }
       });
       if (this.startDate) {
         startDate = this.startDate.toISOString().slice(0, 19).replace('T', ' ');
@@ -81,15 +81,34 @@ export class JobOccurrencesComponent implements OnInit {
         this.jobOccurrences = data as JobOccurrence[];
         if (this.jobOccurrences.length === 0) { return; }
         this.isSearchListShown = this.mode >= 2;
-        this.numOfOccs = [0, 0, 0, 0, 0];
-        this.jobOccurrences.forEach( occ => this.numOfOccs[occ.status - 1]++);
-        this.showOccurrence(this.jobOccurrences[0].uuid);
+        this.numOfOccs = [0, 0, 0, 0, 0, 0];
+        this.jobOccurrences.forEach( occ => this.numOfOccs[occ.status]++);
+        if (this.numOfOccs[0] === 51) {
+          this.numOfOccs[0] = '50+';
+        }
+        this.showOccurrence(this.jobOccurrences[0]);
       });
   }
 
-  showOccurrence(occUUID: string): void {
-    if (this.jobOccurrence?.uuid === occUUID) { return; }
-    this.jobService.getOccurrence(occUUID).subscribe( data => {
+  showOccurrence(jobOccurrence: JobOccurrence): void {
+    if (this.jobOccurrence?.uuid === jobOccurrence.uuid) { return; }
+    if (jobOccurrence.status === 0) { // Initial
+      const job = this.mainForm.getRawValue();
+      this.jobOccurrence = new JobOccurrence();
+      this.jobOccurrence.uuid = jobOccurrence.uuid;
+      this.jobOccurrence.status = jobOccurrence.status;
+      this.jobOccurrence.jobName = jobOccurrence.jobName;
+      this.jobOccurrence.scheduledDateTime = jobOccurrence.scheduledDateTime;
+      this.jobOccurrence.actualStartDateTime = '';
+      this.jobOccurrence.endDateTime = '';
+      this.jobOccurrence.identity = job.identity;
+      this.jobOccurrence.steps = job.steps;
+      this.jobOccurrence.startCondition = job.startCondition;
+      this.jobOccurrence.outputSetting = job.outputSetting;
+      this.jobOccurrence.applicationLog = [];
+      return;
+    }
+    this.jobService.getOccurrence(jobOccurrence.uuid).subscribe( data => {
       if ('uuid' in data) {
         this.jobOccurrence = data as JobOccurrence;
       } else {

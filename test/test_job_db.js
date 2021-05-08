@@ -762,7 +762,7 @@ describe('Job DB Tests',  () => {
     })
   });
 
-  describe('clear db', ()=>{
+  describe.only('clear db', ()=>{
     it('should clear all the jobs and occurrences', (done) => {
       const selectSQL = 'SELECT INSTANCE_GUID FROM ENTITY_INSTANCES where ENTITY_ID = \'jobOccurrence\' or ENTITY_ID = \'job\'';
       EntityDB.executeSQL(selectSQL, async (errors, results)=> {

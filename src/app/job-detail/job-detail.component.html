@@ -89,7 +89,7 @@
 
   <div class="mt-2" [ngSwitch]="tabStrip">
     <app-job-steps *ngSwitchCase="1" [mainForm]="mainForm" [readonly]="readonly"></app-job-steps>
-    <app-job-start-condition *ngSwitchCase="2" [mainForm]="mainForm" [readonly]="readonly"></app-job-start-condition>
+    <app-job-start-condition *ngSwitchCase="2" [mainForm]="mainForm" [readonly]="readonly" [hasSimulation]="true"></app-job-start-condition>
     <app-job-occurrences *ngSwitchCase="3" [mainForm]="mainForm" [displayStatistics]="displayStatistics" [readonly]="readonly"></app-job-occurrences>
     <app-admin *ngSwitchCase="4" [mainForm]="mainForm"></app-admin>
   </div>

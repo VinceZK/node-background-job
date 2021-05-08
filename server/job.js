@@ -2,6 +2,7 @@ import {JobError} from './jobError.js';
 import CronParser from 'cron-parser';
 import JobOccurrence from "./jobOccurrence.js";
 import JobProgram from "./jobProgram.js";
+import Scheduler from "./scheduler.js";
 import {JobStatusEnum, OccurrenceStatusEnum, StartConditionEnum} from "./constants.js";
 import * as jor from 'json-on-relations';
 import { v4 as uuid } from 'uuid';
@@ -585,7 +586,7 @@ export default class Job {
         return scheduledDateTime < this.startDateTime;
       case StartConditionEnum.recurrently:
         const cronOption = {
-          currentDate: scheduledDateTime.toISOString().slice(0, 19).replace('T', ' '),
+          currentDate: scheduledDateTime.toISOString(),
           endDate: this.startCondition.cronEndDate,
           tz: this.startCondition.tz
         };
@@ -618,12 +619,12 @@ export default class Job {
    * @returns {Promise<void>}
    */
   async #setStatus(status) {
-    if (status >= this.entry.status) {
+    if (status > this.entry.status) {
       if (process.env.USE_DB === 'true') {
         await this.#setStatusDB(status);
       }
       this.entry.status = status;
-    } else {
+    } else if (status < this.entry.status) {
       throw new JobError('INCORRECT_JOB_STATUS_CHANGE', this.entry.status, status);
     }
   }
@@ -657,9 +658,9 @@ export default class Job {
     if (endDateTime < this.startDateTime) {
       return;
     }
-    // startDateTime should be no later than now for 2147483 seconds.
-    // Because the function setTimeout(maxTimeout) has the max waiting time of 2147483647ms, about 2147483s
-    if (this.startDateTime.getTime() - Date.now() <= 2147483000) {
+    // If startDateTime is later than now for the intervalHrs.
+    // It is not scheduled, and will wait for the next scheduling run.
+    if (this.startDateTime.getTime() - Date.now() <= Scheduler.intervalHrs * 3600) {
       const jobOcc = new JobOccurrence(this, this.startDateTime);
       if (process.env.USE_DB === 'true') {
         await jobOcc.persistJobOccurrence();
@@ -704,13 +705,57 @@ export default class Job {
   }
 
   /**
-   * Generate the occurrence timespan and converted to cronOption.
-   * 2 conditions must be met:
-   * 1. The startDateTime should be the last scheduled datetime. If not, then the job start datetime.
-   * 2. The endDateTime should be no larger than 2147483 seconds from the current(Date.now).
-   * @param endDateTime
+   * Return the unscheduled occurrences to the given endDateTime.
+   * @param endDateTime: optional, if not given, the job's endDatetime is used.
+   * @returns {[]}: the occurrences schedule datetime. The maximum shown number is 50.
+   * If the returned number is 51, then it indicates there are more occurrences which are not shown.
    */
-  generateCronOption(endDateTime) {
+  getUnscheduledOccurrences(endDateTime) {
+    const occurrences = [];
+    const endDate = endDateTime ? (endDateTime instanceof Date? endDateTime : new Date(endDateTime + ' UTC'))
+      : this.startCondition.cronEndDate;
+    if (this.startCondition.mode === StartConditionEnum.immediately) {
+      return occurrences;
+    } else if (this.startCondition.mode === StartConditionEnum.specificTime) {
+      let lastScheduledOccurrence = JobOccurrence.getLastScheduledOccurrence(this.name);
+      if (!lastScheduledOccurrence && (!endDate || this.startDateTime <= endDate)) {
+        occurrences.push(this.entry.startCondition.specificTime);
+      }
+      return occurrences;
+    } else if (this.startCondition.mode === StartConditionEnum.recurrently) {
+      const maxShown = 50;
+      let scheduleDateTime;
+      const cronOption = this.generateCronOption(endDate,false);
+      try {
+        const interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);
+        while (true) {
+          try {
+            scheduleDateTime = interval.next().toISOString().slice(0, 19).replace('T', ' ');
+            if (occurrences.length > maxShown) {
+              break;
+            } else {
+              occurrences.push(scheduleDateTime);
+            }
+          } catch (e) {
+            break;
+          }
+        }
+        return occurrences;
+      } catch (err) {
+        throw new JobError('GENERIC_ERROR', err);
+      }
+    }
+  }
+
+  /**
+   * Generate the occurrence timespan and converted to cronOption.
+   * The startDateTime should be the last scheduled datetime. If not, then the job start datetime.
+   * @param endDateTime:
+   * If not provided, then the endDateTime is the "intervalHrs" from now.
+   * If provided endDateTime is before the next "intervalHrs", then use the endDateTime, else, use the next "intervalHrs"
+   * @param checkScheduleInterval
+   */
+  generateCronOption(endDateTime, checkScheduleInterval = true) {
     // The start time should always be job's startDateTime
     let start = this.startDateTime;
     let now = new Date();
@@ -726,17 +771,11 @@ export default class Job {
     if (this.endDateTime && end > this.endDateTime) {
       end = this.endDateTime;
     }
-    // endDateTime should be no later than now for 2147483 seconds.
-    // Because the function setTimeout(maxTimeout) has the max waiting time of 2147483647ms, about 2147483s
-    const maxTimeout = 2147483;
-    if (!end) { // endless
+    // endDateTime should be no later than the intervalHrs from now.
+    if (checkScheduleInterval && (!end || end.getTime() - now.getTime() > Scheduler.intervalHrs * 3600000)) {
       end = new Date();
-      end.setSeconds(now.getSeconds() + maxTimeout);
-    } else if (end.getTime() - now.getTime() > maxTimeout * 1000) {
-      end = new Date();
-      end.setSeconds(now.getSeconds() + maxTimeout);
+      end.setHours(now.getHours() + Scheduler.intervalHrs);
     }
-
     Job.checkStartEndTime(start, end, now);
 
     return {
