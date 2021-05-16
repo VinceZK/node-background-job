@@ -138,12 +138,12 @@ export default class Job {
       'name', 'status', 'mode', 'finishedOccurrences', 'failedOccurrences', 'canceledOccurrences',
       {FIELD_NAME: 'text', RELATION_ID: 'r_text'}
     ];
-    queryObject.FILTER = [{
-      FIELD_NAME: 'langu',
-      RELATION_ID: 'r_text',
-      OPERATOR: 'EQ',
-      LOW: 'DEFAULT'
-    }];
+    queryObject.FILTER = [
+      // { FIELD_NAME: 'langu',
+      //   RELATION_ID: 'r_text',
+      //   OPERATOR: 'EQ',
+      //   LOW: 'DEFAULT'}
+    ];
     if (filter && filter.name_includes) {
       queryObject.FILTER.push({
         FIELD_NAME: 'name',
@@ -199,7 +199,7 @@ export default class Job {
    * @param now
    */
   static checkStartEndTime(start, end, now) {
-    if (start && end && start >= end) {
+    if (start && end && start - end > 1000) { // 1 second is for the torrence
       throw new JobError('END_DATE_BEFORE_CURRENT_DATE');
     }
     if (end && end < now) {
@@ -586,8 +586,8 @@ export default class Job {
         return scheduledDateTime < this.startDateTime;
       case StartConditionEnum.recurrently:
         const cronOption = {
-          currentDate: scheduledDateTime.toISOString(),
-          endDate: this.startCondition.cronEndDate,
+          currentDate: scheduledDateTime,
+          endDate: this.endDateTime,
           tz: this.startCondition.tz
         };
         const interval = CronParser.parseExpression(this.startCondition.cronString, cronOption);

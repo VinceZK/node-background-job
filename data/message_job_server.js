@@ -49,12 +49,6 @@ export const msgArray = [
     }
   },
   { msgCat: "jobProgram",
-    msgName: "INVALID_DEFAULT_RADIO_OPTION",
-    msgText: {
-      EN: {shortText: "One and only one option should be default", longText: "dummy"}
-    }
-  },
-  { msgCat: "jobProgram",
     msgName: "DUPLICATE_JOB_PARAMETERS",
     msgText: {
       EN: {shortText: "Parameter %s is duplicated", longText: "dummy"}
@@ -70,6 +64,24 @@ export const msgArray = [
     msgName: "MANDATORY_PARAMETER_VALUE_MISSING",
     msgText: {
       EN: {shortText: "Mandatory parameter %s has no value assigned", longText: "dummy"}
+    }
+  },
+  { msgCat: "jobProgram",
+    msgName: "INVALID_DISPLAY_IN",
+    msgText: {
+      EN: {shortText: "%s is not an allowed value for displayIn", longText: "dummy"}
+    }
+  },
+  { msgCat: "jobProgram",
+    msgName: "INVALID_DISPLAY_AS",
+    msgText: {
+      EN: {shortText: "%s is not an allowed value for displayAs", longText: "dummy"}
+    }
+  },
+  { msgCat: "jobProgram",
+    msgName: "INVALID_COLUMN_SPAN",
+    msgText: {
+      EN: {shortText: "%s is not an allowed value for columnSpan in parameter %s", longText: "dummy"}
     }
   },
 

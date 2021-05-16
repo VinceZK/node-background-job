@@ -48,6 +48,7 @@ describe('Application log class tests',  () => {
     const jobOccurrenceEntry = JobOccurrence.getOccurrences({jobName: 'applicationLog'})[0];
     const appLog = jobOccurrenceEntry.instance.applicationLog;
     appLog.log('Log level: %s', 'info->general');
+    appLog.success('Log level: %s', 'success');
     appLog.info('Log level: %s', 'info');
     appLog.debug('Log level: %s', 'debug');
     appLog.error('Log level: %s', 'error');
@@ -56,10 +57,13 @@ describe('Application log class tests',  () => {
     appLog.successMessage('applicationLog', 'DEFAULT', 'message message');
     appLog.warningMessage('applicationLog', 'DEFAULT', 'warning message');
     appLog.errorMessage('applicationLog', 'DEFAULT', 'error message');
-    jobOccurrenceEntry.applicationLog.length.should.eql(9);
+    jobOccurrenceEntry.applicationLog.length.should.eql(10);
     jobOccurrenceEntry.applicationLog.should.containDeep([
       { message: {
           msgShortText: 'Log level: info->general', msgLongText: 'Log level: info->general', msgType: 'I'}
+      },
+      { message: {
+          msgShortText: 'Log level: success', msgLongText: 'Log level: success', msgType: 'S'}
       },
       { message: {
           msgShortText: 'Log level: info', msgLongText: 'Log level: info', msgType: 'I' }

@@ -70,70 +70,135 @@ export default class JobProgram {
      * }
      */
     this.#deriveText(programDefinition, 'description', name);
-    /**
-     * parameterDefinition @type
-     *   parameterDefinitions: {
-     *     GROUP1: {
-     *       text?: {DEFAULT: 'text of group1'},
-     *       parameters!: {
-     *         PARAM1: {
-     *           type?: [1: char, 2: integer, 3: boolean, 7: date, 8: timestamp],
-     *           dataElement?: 'ELEMENT',
-     *           radioButtons?: {
-     *             option1: {DEFAULT: true, text: {DEFAULT: 'Label2'} },
-     *             option2: {text: {DEFAULT: 'Label2'} }
-     *           }
-     *           text?: {DEFAULT: 'Label1'},
-     *           multiple: true,
-     *           mandatory: true,
-     *           hidden: false,
-     *           defaultValue: ''
-     *         },
-     *         PARAM12 {
-     *           dataElement: 'ELEMENT',
-     *           text: {DEFAULT: 'Label2'},
-     *           multiple: true,
-     *           mandatory: true
-     *         },
-     *       }
-     *     }
-     *   }
-     */
+
     if (!programDefinition.parameterDefinitions) {
       programDefinition.parameterDefinitions = {};
-    } else {
-      const paramNameIndex = [];
-      for (const [groupName, groupDefinition] of Object.entries(programDefinition.parameterDefinitions)) {
-        this.#deriveText(groupDefinition, 'text', groupName);
-        const parameters = groupDefinition.parameters;
-        if (!parameters || Object.keys(parameters).length === 0) {
-          throw new JobProgramError('NO_PARAMETERS_IN_GROUP', groupName)
+    }
+    this.#checkParameterDefinition(programDefinition.parameterDefinitions);
+    this.#jobPrograms[name] = programDefinition;
+  }
+  /**
+   * parameterDefinition @type
+   *   parameterDefinitions: {
+   *     GROUP1: {
+   *       // Label text of the group, supports multiple languages
+   *       text?: {DEFAULT: 'text of group1'},
+   *
+   *       // How is the group displayed.
+   *       // Allowed values are 'block' and 'row'.
+   *       displayIn?: 'block', // default 'block'
+   *
+   *       // Definition of the parameters
+   *       parameters: {
+   *         PARAM_NAME: {
+   *           // The data type of the parameter
+   *           // Allowed values are '1: char', '2: integer', '3: boolean', '4: decimal', '5: string', '6: binary', '7: date', '8: timestamp'
+   *           type?: 1, // default 1
+   *
+   *           // Allowed values for the parameter.
+   *           // Description of a value supports multiple languages
+   *           domain?: {
+   *             value1: {DEFAULT: 'Label1'},
+   *             value2: '',
+   *           }
+   *
+   *           // Regex to describe the parameter value
+   *           pattern?: ''
+   *
+   *           // Label text of the parameter, supports multiple languages
+   *           text?: {DEFAULT: 'Label1'},
+   *
+   *           // The default value of the parameter
+   *           defaultValue?: '',
+   *
+   *           // How is the parameter displayed
+   *           // Allowed values are 'input', 'dropdown', 'radiobutton', 'checkbox', 'text', and 'password'
+   *           displayAs?: 'input',  // default 'input'
+   *
+   *           // If json-on-relation is used, then data element can be assigned.
+   *           // However, attributes like type, domain, text, defaultValue and displayAs override the settings in the data element.
+   *           dataElement?: 'ELEMENT',
+   *
+   *           // Control whether the parameter is mandatory
+   *           mandatory: true,
+   *
+   *           // Control whether the parameter is readonly
+   *           // Besides given a boolean value, an expression can also be provided
+   *           readOnly: false,
+   *
+   *           // Control whether the parameter is hidden or shown.
+   *           // Besides given a boolean value, an expression can also be provided
+   *           hidden: false,
+   *
+   *           // How many columns are spanned for the parameter. The total number of columns is 12.
+   *           columnSpan?: 2,  // From 1~12, default 12
+   *
+   *           // Whether to hide the label or not
+   *           hideLabel: false
+   *         }
+   *       }
+   *     }
+   *   }
+   */
+  static #checkParameterDefinition(parameterDefinitions) {
+    const paramNameIndex = [];
+    for (const [groupName, groupDefinition] of Object.entries(parameterDefinitions)) {
+      this.#deriveText(groupDefinition, 'text', groupName);
+
+      if (groupDefinition.displayIn) {
+        const allowedDisplayIn = ['block', 'row'];
+        if (!allowedDisplayIn.includes(groupDefinition.displayIn)) {
+          throw new JobProgramError('INVALID_DISPLAY_IN', groupDefinition.displayIn);
         }
-        for (const [paramName, paramDefinition] of Object.entries(parameters)) {
-          let index = paramNameIndex.findIndex( name => name === paramName);
-          if (index !== -1) {
-            throw new JobProgramError('DUPLICATE_JOB_PARAMETERS', paramName);
-          }
-          paramNameIndex.push(paramName);
-          this.#deriveText(paramDefinition, 'text', paramName);
-          if (paramDefinition.type &&
-            ![1, 2, 3, 7, 8].includes(paramDefinition.type)) {
-            throw new JobProgramError('INVALID_PARAMETER_TYPE', programDefinition.type);
-          }
-          if (paramDefinition.radioButtons) {
-            let numDefaultOption = 0;
-            for (const [optionName, optionDefinition] of Object.entries(paramDefinition.radioButtons)) {
-              this.#deriveText(optionDefinition, 'text', optionName);
-              if (optionDefinition.DEFAULT) { numDefaultOption++ }
+      } else {
+        groupDefinition.displayIn = 'block';
+      }
+
+      const parameters = groupDefinition.parameters;
+      if (!parameters || Object.keys(parameters).length === 0) {
+        throw new JobProgramError('NO_PARAMETERS_IN_GROUP', groupName)
+      }
+      for (const [paramName, paramDefinition] of Object.entries(parameters)) {
+        let index = paramNameIndex.findIndex( name => name === paramName);
+        if (index !== -1) {
+          throw new JobProgramError('DUPLICATE_JOB_PARAMETERS', paramName);
+        }
+        paramNameIndex.push(paramName);
+
+        if (paramDefinition.type &&
+          ![1, 2, 3, 4, 5, 6, 7, 8].includes(paramDefinition.type)) {
+          throw new JobProgramError('INVALID_PARAMETER_TYPE', paramDefinition.type);
+        }
+
+        if (paramDefinition.domain) {
+          for (const [value, valueDescription] of Object.entries(paramDefinition.domain)) {
+            if (!valueDescription) {
+              paramDefinition.domain[value] = {DEFAULT: value};
             }
-            if (numDefaultOption !== 1) {
-              throw new JobProgramError('INVALID_DEFAULT_RADIO_OPTION');
+            if (typeof valueDescription === 'string') {
+              paramDefinition.domain[value]= {DEFAULT: valueDescription};
             }
+          }
+        }
+
+        this.#deriveText(paramDefinition, 'text', paramName);
+
+        if (paramDefinition.displayAs) {
+          const allowedDisplayAs = ['input', 'dropdown', 'radiobutton', 'checkbox', 'text', 'password'];
+          if (!allowedDisplayAs.includes(paramDefinition.displayAs)) {
+            throw new JobProgramError('INVALID_DISPLAY_AS', paramDefinition.displayAs);
+          }
+        } else {
+          paramDefinition.displayAs = paramDefinition.domain ? 'dropdown' : 'input';
+        }
+
+        if (paramDefinition.columnSpan) {
+          if (paramDefinition.columnSpan <= 0 || paramDefinition.columnSpan > 12 ) {
+            throw new JobProgramError('INVALID_COLUMN_SPAN', paramDefinition.columnSpan, paramName);
           }
         }
       }
     }
-    this.#jobPrograms[name] = programDefinition;
   }
 
   static #deriveText(object, textFieldName, defaultText) {
@@ -159,6 +224,14 @@ export default class JobProgram {
       return baseClass.name === 'JobProgram';
     } else {
       return false;
+    }
+  }
+
+  static #checkBooleanExpression(expression) {
+    if (typeof expression === 'boolean') {
+      return expression;
+    } else {
+      return eval(expression);
     }
   }
   /**

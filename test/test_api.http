@@ -38,7 +38,7 @@ Content-Type: application/json
     {
       "program": "testJobProgram",
       "parameters": {
-        "param1": "value1"
+        "PARAM1": "value1"
       }
     }
   ],

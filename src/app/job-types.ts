@@ -78,17 +78,22 @@ export class ParameterDefinitions {
 
 export class ParameterDefinition {
   text?: Text;
+  displayIn?: string;
   parameters!: Parameters;
 }
 
 export class Parameter {
   type?: number;
-  dataElement?: string;
+  domain?: Domain;
+  pattern?: string;
   text?: Text;
   defaultValue?: string;
-  multiple = false;
+  displayAs?: string;
+  dataElement?: string;
   mandatory = false;
-  hidden = false;
+  readOnly: boolean | string = false;
+  hidden: boolean | string = false;
+  columnSpan?: number;
 }
 
 export class Parameters {
@@ -98,4 +103,8 @@ export class Parameters {
 export class Text {
   DEFAULT!: string;
   [key: string]: string;
+}
+
+export class Domain {
+  [key: string]: Text;
 }

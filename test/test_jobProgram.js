@@ -53,12 +53,28 @@ describe('Job program super class tests', function () {
                                   description: { DEFAULT: 'Super class of a job program' },
                                   parameterDefinitions: {} });
     });
+    it('should fail: INVALID_DISPLAY_IN', () => {
+      try {
+        JobProgram.registerJobProgram('testProgram2', {
+          className: 'JobProgram',
+          description: { EN: 'description of job program' },
+          parameterDefinitions: { GROUP1: {
+            text: 'text of group', displayIn: 'xxx'
+          }}
+        });
+        (1).should.eql(2);
+      } catch (e) {
+        e.message.msgName.should.eql('INVALID_DISPLAY_IN');
+      }
+    });
     it('should fail: NO_PARAMETERS_IN_GROUP', () => {
       try {
         JobProgram.registerJobProgram('testProgram2', {
           className: 'JobProgram',
           description: { EN: 'description of job program' },
-          parameterDefinitions: { GROUP1: { text: 'text of group' }}
+          parameterDefinitions: { GROUP1: {
+            text: 'text of group', displayIn: 'block'
+          }}
         });
         (1).should.eql(2);
       } catch (e) {
@@ -81,7 +97,7 @@ describe('Job program super class tests', function () {
         e.message.msgName.should.eql('INVALID_PARAMETER_TYPE');
       }
     });
-    it('should fail: INVALID_DEFAULT_RADIO_OPTION', () => {
+    it('should fail: INVALID_DISPLAY_AS', () => {
       try {
         JobProgram.registerJobProgram('testProgram2', {
           className: 'JobProgram',
@@ -92,17 +108,56 @@ describe('Job program super class tests', function () {
               parameters: {
                 PARAM1: {
                   type: 1,
-                  radioButtons: {
-                    option1: {DEFAULT: true},
-                    option2: {DEFAULT: true}
-                  }
-                }
-              }
+                  displayAs: 'xxxx'
+                } }
             }}
         });
         (1).should.eql(2);
       } catch (e) {
-        e.message.msgName.should.eql('INVALID_DEFAULT_RADIO_OPTION');
+        e.message.msgName.should.eql('INVALID_DISPLAY_AS');
+      }
+    });
+    it('should fail: COLUMN_SPAN_ONLY_IN_ROW', () => {
+      try {
+        JobProgram.registerJobProgram('testProgram2', {
+          className: 'JobProgram',
+          description: { EN: 'description of job program' },
+          parameterDefinitions: {
+            GROUP1: {
+              text: 'text of group',
+              parameters: {
+                PARAM1: {
+                  type: 1,
+                  displayAs: 'input',
+                  columnSpan: 10
+                } }
+            }}
+        });
+        (1).should.eql(2);
+      } catch (e) {
+        e.message.msgName.should.eql('COLUMN_SPAN_ONLY_IN_ROW');
+      }
+    });
+    it('should fail: INVALID_COLUMN_SPAN', () => {
+      try {
+        JobProgram.registerJobProgram('testProgram2', {
+          className: 'JobProgram',
+          description: { EN: 'description of job program' },
+          parameterDefinitions: {
+            GROUP1: {
+              text: 'text of group',
+              displayIn: 'row',
+              parameters: {
+                PARAM1: {
+                  type: 1,
+                  displayAs: 'input',
+                  columnSpan: 13
+                } }
+            }}
+        });
+        (1).should.eql(2);
+      } catch (e) {
+        e.message.msgName.should.eql('INVALID_COLUMN_SPAN');
       }
     });
     it('should fail: DUPLICATE_JOB_PARAMETERS', () => {
@@ -114,7 +169,13 @@ describe('Job program super class tests', function () {
             GROUP1: {
               text: 'text of group1',
               parameters: {
-                PARAM1: {type: 1}
+                PARAM1: {
+                  type: 1,
+                  domain: {
+                    value1: 'value1',
+                    value2: {DEFAULT: 'VALUE2'}
+                  }
+                }
               }
             },
             GROUP2: {
@@ -137,20 +198,24 @@ describe('Job program super class tests', function () {
         parameterDefinitions: {
           GROUP1: {
             text: 'text of group',
+            displayIn: 'row',
             parameters: {
               PARAM1: {
                 type: 1,
-                radioButtons: {
-                  option1: {DEFAULT: true},
-                  option2: {text: 'text of option2'}
-                }
+                domain: {
+                  value1: 'value1',
+                  value2: {DEFAULT: 'VALUE2'}
+                },
+                columnSpan: 2
               },
               PARAM2: {
                 dataElement: 'JOB_NAME',
                 text: {EN: 'text of param2'},
                 multiple: true,
                 mandatory: true,
-                hidden: false
+                hidden: false,
+                displayAs: 'input',
+                columnSpan: 10
               }
             }
           },
@@ -169,25 +234,31 @@ describe('Job program super class tests', function () {
         parameterDefinitions: {
           GROUP1: {
             text: {DEFAULT: 'text of group'},
+            displayIn: 'row',
             parameters: {
               PARAM1: {
                 type: 1,
-                radioButtons: {
-                  option1: {DEFAULT: true, text: {DEFAULT: 'option1'}},
-                  option2: {text: {DEFAULT: 'text of option2'}}
-                }
+                domain: {
+                  value1: {DEFAULT: 'value1'},
+                  value2: {DEFAULT: 'VALUE2'}
+                },
+                columnSpan: 2,
+                displayAs: 'dropdown'
               },
               PARAM2: {
                 dataElement: 'JOB_NAME',
                 text: {EN: 'text of param2'},
                 multiple: true,
                 mandatory: true,
-                hidden: false
+                hidden: false,
+                displayAs: 'input',
+                columnSpan: 10
               }
             }
           },
           GROUP2: {
             text: { DEFAULT: 'text of group2'},
+            displayIn: 'block',
             parameters: {
               PARAM3: {text: {DEFAULT: 'PARAM3'}}
             }

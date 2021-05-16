@@ -4,7 +4,7 @@ import JobProgram from "../jobProgram.js";
 import {Message, MsgArrayStore} from "ui-message";
 import {msgArray} from "../../data/message_job_server.js";
 import CronParser from "cron-parser";
-import {OccurrenceStatusEnum} from "../constants.js";
+import {OccurrenceStatusEnum, StartConditionEnum} from "../constants.js";
 
 const msgStore = new MsgArrayStore(msgArray);
 export const message = new Message(msgStore, 'EN');
@@ -243,19 +243,23 @@ export default class JobCtrl{
 
     function _getUnscheduledOccurrences() {
       const job = Job.getJob(jobName)?.instance;
-      if (!job) {return;}
-      const unScheduledOccurrences = job.getUnscheduledOccurrences(filter.endDate || null)
-        .map((scheduleDateTime, index) => {
-          return {
-            uuid: index,
-            jobName: jobName,
-            status: OccurrenceStatusEnum.initial,
-            actualStartDateTime: '',
-            endDateTime: '',
-            scheduledDateTime: scheduleDateTime
-          }
-        });
-      Array.prototype.push.apply(occurrences, unScheduledOccurrences);
+      if (!job || job.startCondition.mode === StartConditionEnum.immediately) {return;}
+      try {
+        const unScheduledOccurrences = job.getUnscheduledOccurrences(filter.endDate || null)
+          .map((scheduleDateTime, index) => {
+            return {
+              uuid: index,
+              jobName: jobName,
+              status: OccurrenceStatusEnum.initial,
+              actualStartDateTime: '',
+              endDateTime: '',
+              scheduledDateTime: scheduleDateTime
+            }
+          });
+        Array.prototype.push.apply(occurrences, unScheduledOccurrences);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 

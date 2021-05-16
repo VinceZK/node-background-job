@@ -102,6 +102,7 @@ export class JobDetailComponent implements OnInit {
   }
 
   refresh(): void {
+    this.messageService.clearMessages();
     this.jobService.getJobStatus(this.originalValue.name)
       .subscribe( status => {
         const currentStatus = this.mainForm.get('status')?.value;

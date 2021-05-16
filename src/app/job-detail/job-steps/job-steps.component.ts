@@ -79,20 +79,27 @@ export class JobStepsComponent implements OnInit {
   }
 
   onChangeProgram(): void {
-    this.currentParamDefinitions = {};
-    this.currentJobProgramDesc = '';
     const programName = this.currentJobStep.get('program')?.value;
-    if (!programName) { return; }
-
+    if (!programName) {
+      this.currentParamDefinitions = {};
+      this.currentJobProgramDesc = '';
+      return;
+    }
     this.jobService.getJobProgramDefinition(programName)
       .subscribe(programDefinition => {
-        if (!programDefinition) { return; }
+        if (!programDefinition) {
+          this.currentParamDefinitions = {};
+          this.currentJobProgramDesc = '';
+          return;
+        }
         this.currentJobProgramDesc = programDefinition.description?.DEFAULT;
         this.currentParamDefinitions = programDefinition.parameterDefinitions;
       });
   }
 
   close(): void {
+    this.currentParamDefinitions = {};
+    this.currentJobProgramDesc = '';
     this.isAddProgramModalShown = false;
   }
 
@@ -105,7 +112,7 @@ export class JobStepsComponent implements OnInit {
     if (this.isNewProgram) {
       this.jobStepFormArray.push(this.currentJobStep);
     }
-    this.isAddProgramModalShown = false;
+    this.close();
   }
 
   delete(index: number): void {

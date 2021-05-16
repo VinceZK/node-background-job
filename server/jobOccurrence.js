@@ -97,6 +97,7 @@ export default class JobOccurrence {
    */
   static getOccurrencesDB(filter) {
     let queryObject = {ENTITY_ID: 'jobOccurrence', RELATION_ID: 'jobOccurrence'};
+    queryObject.SORT = ['scheduledDateTime'];
     queryObject.FILTER = [];
     if (filter && filter.jobName) {
       queryObject.FILTER.push({
@@ -357,7 +358,7 @@ export default class JobOccurrence {
     let then = this.scheduledDateTime.getTime();
     this.timerHandler = setTimeout(() => {
       this.#runSteps(this.applicationLog).catch(e => {
-        this.applicationLog.error(e.message);
+        this.applicationLog.error(e.message || e);
       });
     }, (then < now? 0 : then - now));
     return this.timerHandler;
@@ -382,6 +383,9 @@ export default class JobOccurrence {
       try {
         const jobProgramInstance = new theClass(step.program, step.parameters);
         step.output = await jobProgramInstance.run(applicationLog);
+        if (typeof step.output !== 'string') {
+          step.output = JSON.stringify(step.output);
+        }
         step.status = OccurrenceStatusEnum.finished;
       } catch (e) {
         step.status = OccurrenceStatusEnum.failed;

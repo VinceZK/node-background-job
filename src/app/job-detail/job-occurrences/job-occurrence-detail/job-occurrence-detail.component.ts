@@ -18,7 +18,7 @@ export class JobOccurrenceDetailComponent implements OnInit, OnChanges {
   reducedMainForm!: FormGroup;
   currentParamDefinitions!: ParameterDefinitions;
   currentJobStep!: FormGroup;
-  currentOutput: string | undefined;
+  currentOutput: any;
   currentLongMessage: string | undefined;
   isParametersModalShown = false;
   isOutputModalShown = false;
@@ -76,7 +76,11 @@ export class JobOccurrenceDetailComponent implements OnInit, OnChanges {
   }
 
   openOutput(step: Step): void {
-    this.currentOutput = step.output;
+    try {
+      this.currentOutput = JSON.parse(step.output);
+    } catch (e) {
+      this.currentOutput = step.output;
+    }
     this.isOutputModalShown = true;
   }
 

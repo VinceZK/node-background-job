@@ -98,7 +98,7 @@
 <div class="modal fade" id="parametersModal" tabindex="-1" role="dialog"
      [ngClass]="{'show': isParametersModalShown}"
      [ngStyle]="{'display': displayParametersModal}">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="parametersTitle">Parameters</h5>
@@ -130,7 +130,8 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body container-fluid dk-scroll-area" [innerHtml]="currentOutput">
+      <div class="modal-body container-fluid dk-scroll-area" >
+        <pre>{{currentOutput | json}}</pre>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-sm btn-primary" (click)="closeOutput()">Close</button>

@@ -57,7 +57,7 @@ select.ng-invalid{
 .dk-scroll-area {
   overflow-y: scroll;
   min-height: 10rem;
-  max-height: 50rem;
+  max-height: 30rem;
 }
 .treegrid-expander-expanded {
   background-image: url(assets/img/expended.png);

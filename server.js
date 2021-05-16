@@ -4,7 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import {router} from "./server/routes.js";
 import TestJobProgram from "./server/jobPrograms/testJobProgram.js";
-import TestJobProgram2 from "./server/jobPrograms/testJobProgram2.js";
+import HttpRequest from "./server/jobPrograms/httpRequest.js";
 import Job from "./server/job.js";
 import * as jor from 'json-on-relations';
 import * as path from 'path';
