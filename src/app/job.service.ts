@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import {environment} from '../environments/environment';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Message, MessageService, messageType} from 'ui-message-angular';
-import {Router} from '@angular/router';
 import {formatDate} from '@angular/common';
 import {Observable, of} from 'rxjs';
 import {Job, JobOccurrence, JobProgram, StartCondition} from './job-types';
@@ -31,15 +30,20 @@ export class JobService {
   private originalHost = environment.originalHost;
 
   constructor(private http: HttpClient,
-              private messageService: MessageService,
-              private router: Router) { }
+              private messageService: MessageService) { }
 
   get CurrentTime(): string {
     return formatDate( new Date(), 'yyyy-MM-dd hh:mm:ss', 'en-US' );
   }
 
   toLocaleString(dateStr: string | undefined): string {
-    return dateStr ? formatDate( new Date(dateStr + ' UTC'), 'yyyy-MM-dd HH:mm:ss', 'en-US') : '';
+    if (dateStr) {
+      // to support Safari and Firefox, the dateStr format 'yyyy-MM-dd HH:mm:ss' needs to be converted to 'yyyy/MM/dd HH:mm:ss'
+      const dateStrConverted = dateStr.replace(/-/g, '/');
+      return formatDate( new Date(dateStrConverted + ' UTC'), 'yyyy-MM-dd HH:mm:ss', 'en-US')
+    } else {
+      return '';
+    }
   }
 
   saveJob(isNew: boolean, jobDefinition: Job): Observable<Message[]> {

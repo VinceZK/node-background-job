@@ -81,7 +81,9 @@ export class JobDetailComponent implements OnInit {
       } else {
         // @ts-ignore
         const errorMessages = data as Message[];
-        errorMessages.forEach( msg => this.messageService.add(msg));
+        if (errorMessages && Array.isArray(errorMessages)) {
+          errorMessages.forEach( msg => this.messageService.add(msg));
+        }
       }
     });
   }

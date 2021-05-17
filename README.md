@@ -34,7 +34,7 @@ In the second tab "Start Condition", you can define the job in one of the 3 mode
 2. *At Specific Time*: the job will be executed at a specific time in future. 
 3. *Recursively*: the job will be executed recursively based on [Cron](https://www.gnu.org/software/mcron/manual/html_node/Crontab-file.html).
 
-The cron expression in the below example means the job will be executed in 8:00 and 16:00 every day
+The cron expression in the below example means the job will be executed in 8:00 and 20:00 every day
 starting from now to the given end time.
 ![Start Condition](docs/StartCondition.png)
 

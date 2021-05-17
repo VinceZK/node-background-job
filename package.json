@@ -1,6 +1,6 @@
 {
   "name": "node-background-job",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A background job scheduler for NodeJS",
   "main": "index",
   "type": "module",
@@ -32,7 +32,7 @@
     "cron-parser": "^3.1.0",
     "dynamodb-onetable": "^1.3.4",
     "express": "^4.17.1",
-    "jor-angular": "^3.2.8",
+    "jor-angular": "^3.3.0",
     "json-on-relations": "^3.3.0",
     "rxjs": "~6.6.0",
     "tslib": "^2.0.0",
