@@ -1,21 +1,21 @@
 <div class="card mt-2" *ngFor="let group of groups">
-  <div *ngIf="group.displayIn === 'block'" class="card-header">{{group.label}}</div>
+  <div *ngIf="group['displayIn'] === 'block'" class="card-header">{{group.label}}</div>
   <div class="card-body">
-    <div [class.row]="group.displayIn === 'row'">
+    <div [class.row]="group['displayIn'] === 'row'">
       <div *ngFor="let parameter of getGroupParameters(group.name)"
-           [className]="'col-' + parameter.paramDefinition.columnSpan"
+           [className]="'col-' + parameter['paramDefinition'].columnSpan"
            [ngStyle]="{'display': parameter['paramDefinition'].hidden?'none':'block'}">
-        <dk-app-attribute-form2  *ngIf="!parameter.paramDefinition.hideLabel && parameter['attributeControl']"
+        <dk-app-attribute-form2  *ngIf="!parameter['paramDefinition']['hideLabel'] && parameter['attributeControl']"
                                  [attributeControl]="parameter['attributeControl']"
                                  [formGroup]="paramFormGroup"
-                                 [readonly]="readonly || parameter.paramDefinition.readOnly"
+                                 [readonly]="readonly || parameter['paramDefinition'].readOnly"
                                  (change)="onChange($event)"
                                  [isSmallSize]="true">
         </dk-app-attribute-form2>
-        <dk-app-attribute *ngIf="parameter.paramDefinition.hideLabel && parameter['attributeControl']"
+        <dk-app-attribute *ngIf="parameter['paramDefinition']['hideLabel'] && parameter['attributeControl']"
                                  [attributeControl]="parameter['attributeControl']"
                                  [formGroup]="paramFormGroup"
-                                 [readonly]="readonly || parameter.paramDefinition.readOnly"
+                                 [readonly]="readonly || parameter['paramDefinition'].readOnly"
                                  (change)="onChange($event)"
                                  [isSmallSize]="true">
         </dk-app-attribute>

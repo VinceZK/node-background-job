@@ -83,6 +83,7 @@ export class JobParametersComponent implements OnInit, OnChanges {
               // @ts-ignore
               parameter.attributeControl = this.attributeControlService.toSingleAttributeControl(attribute);
               this.adjustAttributeControl(parameter.attributeControl, paramDefinition);
+              this.parameters.push(parameter);
             });
         } else {
           const paramAttribute = new Attribute();
@@ -94,9 +95,8 @@ export class JobParametersComponent implements OnInit, OnChanges {
           // @ts-ignore
           parameter.attributeControl = this.attributeControlService.toSingleAttributeControl(paramAttribute);
           this.adjustAttributeControl(parameter.attributeControl, paramDefinition);
+          this.parameters.push(parameter);
         }
-
-        this.parameters.push(parameter);
       }
     }
     // evaluate boolean expressions

@@ -54,6 +54,7 @@ export default class JobOccurrence {
             occEntry.outputSetting = { ...result.r_output_setting[0] };
           }
           if (result.r_application_log) {
+            result.r_application_log.sort((appLog1, appLog2) => appLog1.time < appLog2.time ? -1 : 1);
             occEntry.applicationLog = result.r_application_log.map( appLog => {
               return {
                 time: appLog.time,

@@ -37,7 +37,15 @@ export class JobRecursiveScheduleComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(): void {
-    this.cronString = this.startConditionForm.get('cronString')?.value || '0 * * * * *';
+    const cronStringCtrl = this.startConditionForm.get('cronString');
+    if (cronStringCtrl) {
+      if (cronStringCtrl.value) {
+        this.cronString = cronStringCtrl.value;
+      } else {
+        this.cronString = '0 * * * * *';
+        cronStringCtrl.setValue(this.cronString);
+      }
+    }
     if (this.startConditionForm.get('cronCurrentDate')?.value) {
       // @ts-ignore
       this.cronCurrentDate = new Date(this.startConditionForm.get('cronCurrentDate')?.value + ' UTC');

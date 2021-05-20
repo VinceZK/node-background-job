@@ -35,10 +35,10 @@ JobProgram.registerJobProgram('testJobProgram', {
           text: 'Label1',
           mandatory: true,
         },
-        // PARAM2: {
-        //   dataElement: 'USER_ID',
-        //   defaultValue: 'DH001'
-        // }
+        PARAM2: {
+          dataElement: 'USER_ID',
+          defaultValue: 'DH001'
+        }
       }
     },
     GROUP2: {
