@@ -23,7 +23,7 @@
       <div class="card-body">
         <div class="form-group row col-6">
           <div>
-            <input id="startFrom" name="startFrom" type="datetime-local" class="form-control"
+            <input id="startFrom" name="startFrom" type="datetime-local" class="form-control" step="1"
                    [readOnly]="readonly" [(date)]="specificTime" (dateChange)="onChangeSpecificDate($event)">
           </div>
         </div>

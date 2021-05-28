@@ -48,14 +48,14 @@
           <div class="form-group row">
             <label for="startFrom" class="col-sm-2 col-form-label col-form-label-sm">From:</label>
             <div class="col-sm-10">
-              <input id="startFrom" name="startFrom" type="datetime-local" class="form-control form-control-sm"
+              <input id="startFrom" name="startFrom" type="datetime-local" class="form-control form-control-sm" step="1"
                      [(date)]="startDate">
             </div>
           </div>
           <div class="form-group row">
             <label for="endAt" class="col-sm-2 col-form-label col-form-label-sm">To:</label>
             <div class="col-sm-10">
-              <input id="endAt" name="endAt" type="datetime-local" class="form-control form-control-sm"
+              <input id="endAt" name="endAt" type="datetime-local" class="form-control form-control-sm" step="1"
                      [(date)]="endDate">
             </div>
           </div>
