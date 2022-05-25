@@ -58,6 +58,7 @@ export class JobParametersComponent implements OnInit, OnChanges {
             paramValues = paramValueStr;
           }
         } catch (e) {
+          // @ts-ignore
           this.messageService.reportMessage('JOB', 'GENERAL', 'E', e.message);
         }
         // @ts-ignore
@@ -170,7 +171,7 @@ export class JobParametersComponent implements OnInit, OnChanges {
     const parameters = this.paramFormGroup.getRawValue();
     this.boolExpressions.forEach( boolExpr => {
       const parameter = this.parameters.filter( param => param.name === boolExpr.paramName)[0];
-      if (!parameter) { return;}
+      if (!parameter) { return; }
       const bool = evaluateBoolExpression(boolExpr.expression);
       if (parameter.paramDefinition[boolExpr.attribute] !== bool) {
         parameter.paramDefinition[boolExpr.attribute] = bool;
